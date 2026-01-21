@@ -1,0 +1,109 @@
+import { create } from 'zustand';
+import { Job, JobWithAnalysis, JobStatus, JobFilters } from '@yshvydak-job-screener/shared';
+import * as api from '../api/client';
+
+interface JobStats {
+    new: number;
+    applied: number;
+    saved: number;
+    rejected: number;
+    total: number;
+}
+
+interface JobState {
+    jobs: JobWithAnalysis[];
+    stats: JobStats;
+    loading: boolean;
+    error: string | null;
+    filters: JobFilters;
+    // Actions
+    fetchJobs: () => Promise<void>;
+    fetchStats: () => Promise<void>;
+    updateStatus: (id: string, status: JobStatus) => Promise<void>;
+    deleteJob: (id: string) => Promise<void>;
+    analyzeJob: (id: string) => Promise<void>;
+    setFilters: (filters: Partial<JobFilters>) => void;
+}
+
+export const useJobStore = create<JobState>()((set, get) => ({
+    jobs: [],
+    stats: { new: 0, applied: 0, saved: 0, rejected: 0, total: 0 },
+    loading: false,
+    error: null,
+    filters: {},
+
+    fetchJobs: async () => {
+        set({ loading: true, error: null });
+        try {
+            const { filters } = get();
+            const params = new URLSearchParams();
+            params.append('includeAnalysis', 'true');
+            if (filters.status) params.append('status', filters.status);
+            if (filters.profileId) params.append('profileId', filters.profileId);
+            if (filters.minScore !== undefined) params.append('minScore', String(filters.minScore));
+
+            const data = await api.get<{ jobs: JobWithAnalysis[] }>(`/jobs?${params}`);
+            set({ jobs: data.jobs, loading: false });
+        } catch (error) {
+            set({ error: (error as Error).message, loading: false });
+        }
+    },
+
+    fetchStats: async () => {
+        try {
+            const data = await api.get<{ stats: JobStats }>('/jobs/stats');
+            set({ stats: data.stats });
+        } catch (error) {
+            set({ error: (error as Error).message });
+        }
+    },
+
+    updateStatus: async (id, status) => {
+        try {
+            const data = await api.patch<{ job: Job }>(`/jobs/${id}/status`, { status });
+            set((state) => ({
+                jobs: state.jobs.map((j) => (j.id === id ? { ...j, status: data.job.status } : j))
+            }));
+            // Refresh stats after status change
+            get().fetchStats();
+        } catch (error) {
+            set({ error: (error as Error).message });
+            throw error;
+        }
+    },
+
+    deleteJob: async (id) => {
+        try {
+            await api.del(`/jobs/${id}`);
+            set((state) => ({
+                jobs: state.jobs.filter((j) => j.id !== id)
+            }));
+            get().fetchStats();
+        } catch (error) {
+            set({ error: (error as Error).message });
+            throw error;
+        }
+    },
+
+    analyzeJob: async (id) => {
+        set({ loading: true, error: null });
+        try {
+            const data = await api.post<{ analysis: any }>(`/ai/analyze/${id}`, {});
+            set((state) => ({
+                jobs: state.jobs.map((j) =>
+                    j.id === id ? { ...j, analysis: data.analysis } : j
+                ),
+                loading: false
+            }));
+        } catch (error) {
+            set({ error: (error as Error).message, loading: false });
+            throw error;
+        }
+    },
+
+    setFilters: (newFilters) => {
+        set((state) => ({
+            filters: { ...state.filters, ...newFilters }
+        }));
+    }
+}));
