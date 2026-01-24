@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "test": "turbo run test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
     "type-check": "turbo run type-check",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",

@@ -279,6 +279,28 @@ Before committing updates:
 
 ---
 
+## 🔧 Documentation Audit
+
+Use `/docs-audit` skill to check documentation quality:
+
+```bash
+/docs-audit
+```
+
+**What it checks:**
+- Token budget (are docs too large?)
+- Code-documentation alignment
+- Outdated references
+- Missing documentation
+- Vibe coding readiness
+
+**When to use:**
+- Before starting new development session
+- After major code changes
+- When documentation feels outdated
+
+---
+
 ## 💡 Tips for AI Assistants
 
 ### Best Practices

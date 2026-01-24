@@ -32,8 +32,9 @@ import { createSettingsRoutes } from './routes/settings.routes';
 
 /**
  * Initialize Express application with dependencies
+ * Exported for testing purposes
  */
-function createApp(db: DatabaseManager): Application {
+export function createApp(db: DatabaseManager): Application {
     const app = express();
 
     // Middleware

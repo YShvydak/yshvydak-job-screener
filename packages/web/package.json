@@ -14,7 +14,12 @@
     "lint:fix": "eslint src --fix",
     "clean": "rm -rf dist"
   },
-  "keywords": ["react", "vite", "typescript", "tailwind"],
+  "keywords": [
+    "react",
+    "vite",
+    "typescript",
+    "tailwind"
+  ],
   "author": "Yurii Shvydak <y.shvydak@gmail.com>",
   "license": "MIT",
   "dependencies": {
@@ -25,10 +30,15 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jsdom": "^27.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.16",
+    "jsdom": "^27.4.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.9.3",
