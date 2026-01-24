@@ -19,5 +19,11 @@ export function createSettingsRoutes(controller: SettingsController): Router {
     // DELETE /api/settings/cv - Delete CV content
     router.delete('/cv', controller.deleteCV);
 
+    // GET /api/settings/ai-method - Get AI analysis method
+    router.get('/ai-method', controller.getAIMethod);
+
+    // PUT /api/settings/ai-method - Set AI analysis method
+    router.put('/ai-method', controller.setAIMethod);
+
     return router;
 }

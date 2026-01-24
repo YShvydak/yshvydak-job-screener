@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Jobs } from '../pages/Jobs'
 
-const mockState = {
+const mockJobState = {
   jobs: [],
   loading: false,
   error: null,
@@ -19,14 +19,23 @@ const mockState = {
   setFilters: vi.fn(),
 }
 
+const mockSettingsState = {
+  aiMethod: 'api' as const,
+  fetchAIMethod: vi.fn(),
+}
+
 vi.mock('../stores/jobStore', () => ({
-  useJobStore: () => mockState,
+  useJobStore: () => mockJobState,
+}))
+
+vi.mock('../stores/settingsStore', () => ({
+  useSettingsStore: () => mockSettingsState,
 }))
 
 describe('Jobs', () => {
   it('renders empty state when no jobs', () => {
-    mockState.jobs = []
-    mockState.loading = false
+    mockJobState.jobs = []
+    mockJobState.loading = false
 
     render(<Jobs />)
 
@@ -35,7 +44,7 @@ describe('Jobs', () => {
   })
 
   it('renders job list', () => {
-    mockState.jobs = [
+    mockJobState.jobs = [
       {
         id: 'job-1',
         title: 'Senior Engineer',

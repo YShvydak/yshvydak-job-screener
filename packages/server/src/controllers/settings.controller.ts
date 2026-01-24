@@ -76,4 +76,42 @@ export class SettingsController {
             ResponseHelper.error(res, error);
         }
     };
+
+    /**
+     * GET /api/settings/ai-method
+     * Get AI analysis method
+     */
+    getAIMethod = (_req: Request, res: Response): void => {
+        try {
+            const method = this.settingsRepository.getAIAnalysisMethod();
+            ResponseHelper.success(res, { method });
+        } catch (error) {
+            ResponseHelper.error(res, error);
+        }
+    };
+
+    /**
+     * PUT /api/settings/ai-method
+     * Set AI analysis method
+     */
+    setAIMethod = (req: Request, res: Response): void => {
+        try {
+            const { method } = req.body;
+
+            if (method !== 'api' && method !== 'local') {
+                ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
+                return;
+            }
+
+            this.settingsRepository.setAIAnalysisMethod(method);
+            Logger.success('AI analysis method updated', { method });
+
+            ResponseHelper.success(res, {
+                message: 'AI analysis method updated successfully',
+                method
+            });
+        } catch (error) {
+            ResponseHelper.error(res, error);
+        }
+    };
 }

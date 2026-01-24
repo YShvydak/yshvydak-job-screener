@@ -93,4 +93,33 @@ describe('SettingsRepository', () => {
       expect(value).toBe(fixtures.settings.cv_content)
     })
   })
+
+  describe('AI Analysis Method helpers', () => {
+    it('should return "api" as default when not set', () => {
+      const value = repository.getAIAnalysisMethod()
+      expect(value).toBe('api')
+    })
+
+    it('should set and get method as "api"', () => {
+      repository.setAIAnalysisMethod('api')
+
+      const value = repository.getAIAnalysisMethod()
+      expect(value).toBe('api')
+    })
+
+    it('should set and get method as "local"', () => {
+      repository.setAIAnalysisMethod('local')
+
+      const value = repository.getAIAnalysisMethod()
+      expect(value).toBe('local')
+    })
+
+    it('should return "api" for invalid stored value', () => {
+      // Simulate invalid value in database
+      repository.set('ai_analysis_method', 'invalid_value')
+
+      const value = repository.getAIAnalysisMethod()
+      expect(value).toBe('api')
+    })
+  })
 })

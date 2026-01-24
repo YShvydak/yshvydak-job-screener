@@ -235,7 +235,9 @@ service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'we
 |-------|----------|
 | Duplicate jobs | Check `serpapi_job_id` before insert |
 | Missing CV for AI | Upload CV in Settings |
-| AI analysis fails | Verify `GEMINI_API_KEY` in `.env` |
+| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env` |
+| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI |
+| Switch AI method | Settings page or use dropdown on Analyze button |
 | SerpAPI quota exceeded | Check SerpAPI dashboard |
 | 0 results returned | Valid response, try different keywords |
 | Port conflict | Kill process: `lsof -ti:3001 \| xargs kill -9` |
@@ -266,6 +268,8 @@ service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'we
 - [API_REFERENCE.md](docs/API_REFERENCE.md) - API endpoints
 - [docs/ai/](docs/ai/) - AI-specific documentation
 - [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md) - Architecture decisions
+- [docs/features/](docs/features/) - Feature deep dives
+  - [AI_ANALYSIS.md](docs/features/AI_ANALYSIS.md) - AI job analysis (Cloud API / Local CLI)
 
 ---
 

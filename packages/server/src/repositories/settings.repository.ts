@@ -66,4 +66,22 @@ export class SettingsRepository {
     setCV(content: string): void {
         this.set('cv_content', content);
     }
+
+    /**
+     * Get AI analysis method (default: 'api')
+     */
+    getAIAnalysisMethod(): 'api' | 'local' {
+        const value = this.get('ai_analysis_method');
+        if (value === 'local') {
+            return 'local';
+        }
+        return 'api'; // default
+    }
+
+    /**
+     * Set AI analysis method
+     */
+    setAIAnalysisMethod(method: 'api' | 'local'): void {
+        this.set('ai_analysis_method', method);
+    }
 }

@@ -77,7 +77,7 @@ export function createApp(db: DatabaseManager): Application {
     const profileService = new ProfileService(profileRepository);
     const jobService = new JobService(jobRepository);
     const searchService = new SearchService(jobRepository, profileRepository);
-    const aiService = new AIService(analysisRepository, jobRepository);
+    const aiService = new AIService(analysisRepository, jobRepository, settingsRepository);
 
     // Initialize Controllers
     const profileController = new ProfileController(profileService);

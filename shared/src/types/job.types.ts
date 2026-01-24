@@ -4,6 +4,13 @@
 export type JobStatus = 'new' | 'applied' | 'saved' | 'rejected';
 
 /**
+ * AI Analysis Method
+ * - 'api': Use Google Gemini API (cloud)
+ * - 'local': Use local Gemini CLI
+ */
+export type AIAnalysisMethod = 'api' | 'local';
+
+/**
  * Job entity from database
  */
 export interface Job {

@@ -188,6 +188,44 @@ export const fixtures = {
   },
 
   // ============================================
+  // GEMINI CLI RESPONSES (Mocked)
+  // ============================================
+  geminiCliResponse: {
+    // Full CLI wrapper response
+    wrapper: {
+      session_id: 'test-session-123',
+      response: JSON.stringify({
+        match_score: 85,
+        recommendation: 'APPLY',
+        strengths: ['TypeScript experience', 'Remote work preference matches'],
+        gaps: ['No specific cloud experience mentioned'],
+        reasoning: 'Strong technical match with good cultural fit indicators.',
+      }),
+      stats: {
+        models: {
+          'gemini-2.5-flash-lite': {
+            api: { totalRequests: 1, totalErrors: 0 },
+          },
+        },
+      },
+    },
+    // CLI output with warnings (realistic output)
+    withWarnings: `(node:12345) [DEP0040] DeprecationWarning: The \`punycode\` module is deprecated.
+Loaded cached credentials.
+{
+  "session_id": "test-session-123",
+  "response": "{\\"match_score\\": 75, \\"recommendation\\": \\"APPLY\\", \\"strengths\\": [\\"Good fit\\"], \\"gaps\\": [], \\"reasoning\\": \\"Solid match\\"}",
+  "stats": {}
+}`,
+    // Empty response field
+    emptyResponse: {
+      session_id: 'test-session-456',
+      response: '',
+      stats: {},
+    },
+  },
+
+  // ============================================
   // INVALID DATA (for error testing)
   // ============================================
   invalid: {

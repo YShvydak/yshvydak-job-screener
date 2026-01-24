@@ -1,9 +1,14 @@
 import { GoogleGenAI } from '@google/genai';
-import { Job, AIAnalysis, AIAnalysisParsed } from '@yshvydak-job-screener/shared';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { Job, AIAnalysis, AIAnalysisParsed, AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import { AnalysisRepository, AIAnalysisInput } from '../repositories/analysis.repository';
 import { JobRepository } from '../repositories/job.repository';
+import { SettingsRepository } from '../repositories/settings.repository';
 import { Logger } from '../utils/Logger';
 import { env } from '../config/environment.config';
+
+const execAsync = promisify(exec);
 
 /**
  * Gemini AI response structure for job analysis
@@ -21,10 +26,12 @@ interface GeminiAnalysisResponse {
  */
 export class AIService {
     private ai: GoogleGenAI | null = null;
+    private cliAvailable: boolean | null = null;
 
     constructor(
         private analysisRepository: AnalysisRepository,
-        private jobRepository: JobRepository
+        private jobRepository: JobRepository,
+        private settingsRepository: SettingsRepository
     ) {
         // Initialize Gemini client if API key is available
         if (env.GEMINI_API_KEY) {
@@ -33,11 +40,51 @@ export class AIService {
     }
 
     /**
+     * Check if Gemini CLI is available
+     */
+    async isCliAvailable(): Promise<boolean> {
+        if (this.cliAvailable !== null) {
+            return this.cliAvailable;
+        }
+
+        try {
+            await execAsync('which gemini');
+            this.cliAvailable = true;
+            Logger.info('Gemini CLI is available');
+        } catch {
+            this.cliAvailable = false;
+            Logger.info('Gemini CLI is not available');
+        }
+
+        return this.cliAvailable;
+    }
+
+    /**
+     * Get the effective analysis method based on parameter or setting
+     */
+    private getEffectiveMethod(requestedMethod?: AIAnalysisMethod): AIAnalysisMethod {
+        if (requestedMethod) {
+            return requestedMethod;
+        }
+        return this.settingsRepository.getAIAnalysisMethod();
+    }
+
+    /**
      * Analyze a single job against the user's CV
      */
-    async analyzeJob(jobId: string, cvContent: string): Promise<AIAnalysis> {
-        if (!this.ai) {
-            throw new Error('GEMINI_API_KEY is not configured');
+    async analyzeJob(jobId: string, cvContent: string, method?: AIAnalysisMethod): Promise<AIAnalysis> {
+        const effectiveMethod = this.getEffectiveMethod(method);
+
+        // Validate that the requested method is available
+        if (effectiveMethod === 'api' && !this.ai) {
+            throw new Error('GEMINI_API_KEY is not configured. Please use local CLI or configure API key.');
+        }
+
+        if (effectiveMethod === 'local') {
+            const cliAvailable = await this.isCliAvailable();
+            if (!cliAvailable) {
+                throw new Error('Gemini CLI is not installed. Please install it or use the Cloud API method.');
+            }
         }
 
         // Get the job
@@ -53,10 +100,12 @@ export class AIService {
             return existing;
         }
 
-        Logger.info('Starting AI analysis', { jobId, title: job.title });
+        Logger.info('Starting AI analysis', { jobId, title: job.title, method: effectiveMethod });
 
-        // Generate analysis using Gemini
-        const analysis = await this.generateAnalysis(job, cvContent);
+        // Generate analysis using the appropriate method
+        const analysis = effectiveMethod === 'local'
+            ? await this.generateAnalysisViaCLI(job, cvContent)
+            : await this.generateAnalysisViaAPI(job, cvContent);
 
         // Save to database
         const input: AIAnalysisInput = {
@@ -72,7 +121,8 @@ export class AIService {
         Logger.success('AI analysis completed', {
             jobId,
             matchScore: analysis.match_score,
-            recommendation: analysis.recommendation
+            recommendation: analysis.recommendation,
+            method: effectiveMethod
         });
 
         return saved;
@@ -81,12 +131,12 @@ export class AIService {
     /**
      * Analyze multiple jobs
      */
-    async analyzeJobs(jobIds: string[], cvContent: string): Promise<AIAnalysis[]> {
+    async analyzeJobs(jobIds: string[], cvContent: string, method?: AIAnalysisMethod): Promise<AIAnalysis[]> {
         const results: AIAnalysis[] = [];
 
         for (const jobId of jobIds) {
             try {
-                const analysis = await this.analyzeJob(jobId, cvContent);
+                const analysis = await this.analyzeJob(jobId, cvContent, method);
                 results.push(analysis);
             } catch (error) {
                 Logger.error(`Failed to analyze job ${jobId}`, error);
@@ -114,9 +164,9 @@ export class AIService {
     }
 
     /**
-     * Generate analysis using Gemini AI
+     * Generate analysis using Gemini API (cloud)
      */
-    private async generateAnalysis(job: Job, cvContent: string): Promise<GeminiAnalysisResponse> {
+    private async generateAnalysisViaAPI(job: Job, cvContent: string): Promise<GeminiAnalysisResponse> {
         const prompt = this.buildPrompt(job, cvContent);
 
         try {
@@ -134,6 +184,66 @@ export class AIService {
         } catch (error) {
             Logger.error('Gemini API error', error);
             throw new Error('Failed to generate AI analysis');
+        }
+    }
+
+    /**
+     * Generate analysis using Gemini CLI (local)
+     */
+    private async generateAnalysisViaCLI(job: Job, cvContent: string): Promise<GeminiAnalysisResponse> {
+        const prompt = this.buildPrompt(job, cvContent);
+
+        // Escape the prompt for shell - replace single quotes and backslashes
+        const escapedPrompt = prompt
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "'\\''");
+
+        try {
+            const { stdout } = await execAsync(
+                `gemini -p '${escapedPrompt}' --output-format json`,
+                { timeout: 60000 } // 60 second timeout
+            );
+
+            if (!stdout.trim()) {
+                throw new Error('Empty response from Gemini CLI');
+            }
+
+            // CLI returns JSON wrapper: { session_id, response, stats }
+            // The actual model response is in the 'response' field
+            const responseText = this.extractCliResponse(stdout);
+            return this.parseGeminiResponse(responseText);
+        } catch (error: any) {
+            if (error.killed) {
+                Logger.error('Gemini CLI timeout', error);
+                throw new Error('Gemini CLI timed out. The analysis took too long to complete.');
+            }
+            Logger.error('Gemini CLI error', error);
+            throw new Error('Failed to generate AI analysis via CLI');
+        }
+    }
+
+    /**
+     * Extract the response text from CLI JSON wrapper
+     */
+    private extractCliResponse(stdout: string): string {
+        try {
+            // Find the JSON object in stdout (skip any leading warnings/logs)
+            const jsonMatch = stdout.match(/\{[\s\S]*"response"[\s\S]*\}/);
+            if (!jsonMatch) {
+                Logger.error('CLI output does not contain response JSON', { stdout: stdout.substring(0, 500) });
+                return stdout; // Fall back to raw output
+            }
+
+            const wrapper = JSON.parse(jsonMatch[0]);
+            if (wrapper.response) {
+                return wrapper.response;
+            }
+
+            Logger.error('CLI response field is empty', { wrapper });
+            return stdout;
+        } catch (error) {
+            Logger.error('Failed to parse CLI wrapper JSON', { error, stdout: stdout.substring(0, 500) });
+            return stdout; // Fall back to raw output
         }
     }
 

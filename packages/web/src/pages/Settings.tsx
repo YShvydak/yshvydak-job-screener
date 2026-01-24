@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import { useSettingsStore } from '../stores/settingsStore';
 import * as api from '../api/client';
 
 export function Settings() {
-    const { cvContent, hasCV, loading, error, fetchCV, saveCV, deleteCV } = useSettingsStore();
+    const { cvContent, hasCV, aiMethod, loading, error, fetchCV, saveCV, deleteCV, fetchAIMethod, setAIMethod } = useSettingsStore();
     const [editingCV, setEditingCV] = useState(false);
     const [cvText, setCvText] = useState('');
     const [clearingJobs, setClearingJobs] = useState(false);
@@ -12,6 +13,7 @@ export function Settings() {
 
     useEffect(() => {
         fetchCV();
+        fetchAIMethod();
     }, []);
 
     useEffect(() => {
@@ -52,6 +54,14 @@ export function Settings() {
             setClearJobsError((err as Error).message);
         } finally {
             setClearingJobs(false);
+        }
+    };
+
+    const handleAIMethodChange = async (method: AIAnalysisMethod) => {
+        try {
+            await setAIMethod(method);
+        } catch {
+            // Error handled in store
         }
     };
 
@@ -156,6 +166,54 @@ export function Settings() {
                             </button>
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* AI Analysis Method */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">
+                        AI Analysis Method
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Choose how job analysis is performed
+                    </p>
+                </div>
+                <div className="p-6 space-y-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="aiMethod"
+                            value="api"
+                            checked={aiMethod === 'api'}
+                            onChange={() => handleAIMethodChange('api')}
+                            disabled={loading}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div>
+                            <p className="font-medium text-gray-900">Cloud API</p>
+                            <p className="text-sm text-gray-500">
+                                Use Google Gemini API (requires GEMINI_API_KEY in .env)
+                            </p>
+                        </div>
+                    </label>
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="aiMethod"
+                            value="local"
+                            checked={aiMethod === 'local'}
+                            onChange={() => handleAIMethodChange('local')}
+                            disabled={loading}
+                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div>
+                            <p className="font-medium text-gray-900">Local CLI</p>
+                            <p className="text-sm text-gray-500">
+                                Use local Gemini CLI (requires 'gemini' command installed)
+                            </p>
+                        </div>
+                    </label>
                 </div>
             </div>
 

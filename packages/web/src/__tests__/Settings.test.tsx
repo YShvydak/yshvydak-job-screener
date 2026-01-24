@@ -9,15 +9,19 @@ import { Settings } from '../pages/Settings'
 import * as api from '../api/client'
 
 const fetchCV = vi.fn()
+const fetchAIMethod = vi.fn()
 
 const mockState = {
   cvContent: '',
   hasCV: false,
+  aiMethod: 'api' as const,
   loading: false,
   error: null,
   fetchCV,
   saveCV: vi.fn(),
   deleteCV: vi.fn(),
+  fetchAIMethod,
+  setAIMethod: vi.fn(),
 }
 
 vi.mock('../stores/settingsStore', () => ({

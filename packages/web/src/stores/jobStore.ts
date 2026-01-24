@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Job, JobWithAnalysis, JobStatus, JobFilters } from '@yshvydak-job-screener/shared';
+import { Job, JobWithAnalysis, JobStatus, JobFilters, AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import * as api from '../api/client';
 
 interface JobStats {
@@ -22,7 +22,7 @@ interface JobState {
     fetchStats: () => Promise<void>;
     updateStatus: (id: string, status: JobStatus) => Promise<void>;
     deleteJob: (id: string) => Promise<void>;
-    analyzeJob: (id: string) => Promise<void>;
+    analyzeJob: (id: string, method?: AIAnalysisMethod) => Promise<void>;
     setFilters: (filters: Partial<JobFilters>) => void;
 }
 
@@ -87,14 +87,15 @@ export const useJobStore = create<JobState>()((set, get) => ({
         }
     },
 
-    analyzeJob: async (id) => {
+    analyzeJob: async (id, method) => {
         // Add job to analyzing set
         set((state) => ({
             analyzingJobs: new Set(state.analyzingJobs).add(id),
             error: null
         }));
         try {
-            const data = await api.post<{ analysis: any }>(`/ai/analyze/${id}`, {});
+            const endpoint = method ? `/ai/analyze/${id}?method=${method}` : `/ai/analyze/${id}`;
+            const data = await api.post<{ analysis: any }>(endpoint, {});
             set((state) => ({
                 jobs: state.jobs.map((j) =>
                     j.id === id ? { ...j, analysis: data.analysis } : j

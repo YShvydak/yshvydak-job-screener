@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { JobWithAnalysis, JobStatus } from '@yshvydak-job-screener/shared';
+import { useEffect, useState, useRef } from 'react';
+import { JobWithAnalysis, JobStatus, AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import { useJobStore } from '../stores/jobStore';
+import { useSettingsStore } from '../stores/settingsStore';
 
 const STATUS_OPTIONS: JobStatus[] = ['new', 'saved', 'applied', 'rejected'];
 
@@ -13,10 +14,12 @@ const STATUS_COLORS: Record<JobStatus, string> = {
 
 export function Jobs() {
     const { jobs, loading, error, filters, analyzingJobs, fetchJobs, updateStatus, deleteJob, analyzeJob, setFilters } = useJobStore();
+    const { aiMethod, fetchAIMethod } = useSettingsStore();
     const [expandedJob, setExpandedJob] = useState<string | null>(null);
 
     useEffect(() => {
         fetchJobs();
+        fetchAIMethod();
     }, [filters]);
 
     const handleStatusChange = async (jobId: string, status: JobStatus) => {
@@ -27,9 +30,9 @@ export function Jobs() {
         }
     };
 
-    const handleAnalyze = async (jobId: string) => {
+    const handleAnalyze = async (jobId: string, method?: AIAnalysisMethod) => {
         try {
-            await analyzeJob(jobId);
+            await analyzeJob(jobId, method);
         } catch {
             // Error handled in store
         }
@@ -84,6 +87,7 @@ export function Jobs() {
                         onAnalyze={handleAnalyze}
                         onDelete={deleteJob}
                         isAnalyzing={analyzingJobs.has(job.id)}
+                        defaultMethod={aiMethod}
                     />
                 ))}
 
@@ -107,18 +111,33 @@ function JobCard({
     onStatusChange,
     onAnalyze,
     onDelete,
-    isAnalyzing
+    isAnalyzing,
+    defaultMethod
 }: {
     job: JobWithAnalysis;
     isExpanded: boolean;
     onToggle: () => void;
     onStatusChange: (jobId: string, status: JobStatus) => void;
-    onAnalyze: (jobId: string) => void;
+    onAnalyze: (jobId: string, method?: AIAnalysisMethod) => void;
     onDelete: (jobId: string) => void;
     isAnalyzing: boolean;
+    defaultMethod: AIAnalysisMethod;
 }) {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     return (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow">
             {/* Header */}
             <div
                 className="p-4 cursor-pointer hover:bg-gray-50"
@@ -242,26 +261,66 @@ function JobCard({
                             </select>
 
                             {!job.analysis && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAnalyze(job.id);
-                                    }}
-                                    disabled={isAnalyzing}
-                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                >
-                                    {isAnalyzing ? (
-                                        <>
-                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                <div className="relative" ref={dropdownRef}>
+                                    <div className="inline-flex rounded-md shadow-sm">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onAnalyze(job.id);
+                                            }}
+                                            disabled={isAnalyzing}
+                                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded-l-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                        >
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span>Analyzing...</span>
+                                                </>
+                                            ) : (
+                                                <span>Analyze ({defaultMethod === 'api' ? 'Cloud' : 'Local'})</span>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowDropdown(!showDropdown);
+                                            }}
+                                            disabled={isAnalyzing}
+                                            className="px-2 py-1 text-sm bg-blue-600 text-white rounded-r-md border-l border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                             </svg>
-                                            <span>Analyzing...</span>
-                                        </>
-                                    ) : (
-                                        <span>Analyze</span>
+                                        </button>
+                                    </div>
+                                    {showDropdown && (
+                                        <div className="absolute left-0 bottom-full mb-1 w-40 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowDropdown(false);
+                                                    onAnalyze(job.id, 'api');
+                                                }}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-md"
+                                            >
+                                                Analyze (Cloud)
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowDropdown(false);
+                                                    onAnalyze(job.id, 'local');
+                                                }}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-md"
+                                            >
+                                                Analyze (Local)
+                                            </button>
+                                        </div>
                                     )}
-                                </button>
+                                </div>
                             )}
 
                             {job.apply_link && (

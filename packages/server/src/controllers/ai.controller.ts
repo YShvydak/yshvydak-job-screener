@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import { AIService } from '../services/ai.service';
 import { ResponseHelper } from '../utils/ResponseHelper';
 
@@ -14,10 +15,23 @@ export class AIController {
     /**
      * POST /api/ai/analyze/:jobId
      * Analyze a single job
+     * Query param: ?method=api|local (optional, uses default if not provided)
      */
     analyzeJob = async (req: Request, res: Response): Promise<void> => {
         try {
             const { jobId } = req.params;
+            const methodParam = req.query.method as string | undefined;
+
+            // Validate method parameter if provided
+            let method: AIAnalysisMethod | undefined;
+            if (methodParam) {
+                if (methodParam !== 'api' && methodParam !== 'local') {
+                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
+                    return;
+                }
+                method = methodParam;
+            }
+
             const cvContent = this.getCV();
 
             if (!cvContent) {
@@ -25,7 +39,7 @@ export class AIController {
                 return;
             }
 
-            const analysis = await this.aiService.analyzeJob(jobId, cvContent);
+            const analysis = await this.aiService.analyzeJob(jobId, cvContent, method);
             ResponseHelper.success(res, { analysis });
         } catch (error) {
             ResponseHelper.error(res, error);
@@ -35,10 +49,22 @@ export class AIController {
     /**
      * POST /api/ai/analyze-batch
      * Analyze multiple jobs
+     * Query param: ?method=api|local (optional, uses default if not provided)
      */
     analyzeBatch = async (req: Request, res: Response): Promise<void> => {
         try {
             const { jobIds } = req.body;
+            const methodParam = req.query.method as string | undefined;
+
+            // Validate method parameter if provided
+            let method: AIAnalysisMethod | undefined;
+            if (methodParam) {
+                if (methodParam !== 'api' && methodParam !== 'local') {
+                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
+                    return;
+                }
+                method = methodParam;
+            }
 
             if (!Array.isArray(jobIds) || jobIds.length === 0) {
                 ResponseHelper.badRequest(res, 'jobIds array is required');
@@ -52,7 +78,7 @@ export class AIController {
                 return;
             }
 
-            const analyses = await this.aiService.analyzeJobs(jobIds, cvContent);
+            const analyses = await this.aiService.analyzeJobs(jobIds, cvContent, method);
             ResponseHelper.success(res, {
                 total: jobIds.length,
                 analyzed: analyses.length,

@@ -275,7 +275,8 @@ Before committing updates:
 
 ### Feature Documentation
 
-- [docs/features/](../features/) - Feature-specific deep dives (will be added)
+- [docs/features/](../features/) - Feature-specific deep dives
+  - [AI_ANALYSIS.md](../features/AI_ANALYSIS.md) - AI job analysis (API/CLI methods)
 
 ---
 

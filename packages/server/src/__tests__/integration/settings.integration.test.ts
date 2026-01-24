@@ -71,4 +71,63 @@ describe('Settings API Integration', () => {
     expect(getResponse.body.data.cv_content).toBe('')
     expect(getResponse.body.data.has_cv).toBe(false)
   })
+
+  // ============================================
+  // AI Analysis Method
+  // ============================================
+  describe('AI Analysis Method', () => {
+    it('GET /api/settings/ai-method should return default method', async () => {
+      const response = await request(server.app).get('/api/settings/ai-method').expect(200)
+
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.method).toBe('api')
+    })
+
+    it('PUT /api/settings/ai-method should update to "local"', async () => {
+      const response = await request(server.app)
+        .put('/api/settings/ai-method')
+        .send({ method: 'local' })
+        .expect(200)
+
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.method).toBe('local')
+
+      // Verify persistence
+      const getResponse = await request(server.app).get('/api/settings/ai-method')
+      expect(getResponse.body.data.method).toBe('local')
+    })
+
+    it('PUT /api/settings/ai-method should update to "api"', async () => {
+      // First set to local
+      await request(server.app).put('/api/settings/ai-method').send({ method: 'local' })
+
+      // Then update to api
+      const response = await request(server.app)
+        .put('/api/settings/ai-method')
+        .send({ method: 'api' })
+        .expect(200)
+
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.method).toBe('api')
+    })
+
+    it('PUT /api/settings/ai-method should reject invalid method', async () => {
+      const response = await request(server.app)
+        .put('/api/settings/ai-method')
+        .send({ method: 'invalid' })
+        .expect(400)
+
+      expect(response.body.success).toBe(false)
+      expect(response.body.error).toContain("Invalid method")
+    })
+
+    it('PUT /api/settings/ai-method should reject empty method', async () => {
+      const response = await request(server.app)
+        .put('/api/settings/ai-method')
+        .send({})
+        .expect(400)
+
+      expect(response.body.success).toBe(false)
+    })
+  })
 })
