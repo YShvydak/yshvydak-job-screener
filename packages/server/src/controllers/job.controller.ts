@@ -107,4 +107,17 @@ export class JobController {
             ResponseHelper.error(res, error);
         }
     };
+
+    /**
+     * DELETE /api/jobs
+     * Delete all jobs
+     */
+    clearAll = (_req: Request, res: Response): void => {
+        try {
+            const deletedCount = this.jobService.clearAll();
+            ResponseHelper.success(res, { deletedCount });
+        } catch (error) {
+            ResponseHelper.error(res, error);
+        }
+    };
 }

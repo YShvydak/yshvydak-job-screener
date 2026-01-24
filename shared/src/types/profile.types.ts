@@ -25,7 +25,7 @@ export interface SearchProfileInput {
     name: string;
     keywords: string;
     location: string;
-    date_posted?: DatePosted;
+    date_posted: DatePosted;
     radius?: number;
 }
 

@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
+import * as api from '../api/client';
 
 export function Settings() {
     const { cvContent, hasCV, loading, error, fetchCV, saveCV, deleteCV } = useSettingsStore();
     const [editingCV, setEditingCV] = useState(false);
     const [cvText, setCvText] = useState('');
+    const [clearingJobs, setClearingJobs] = useState(false);
+    const [clearJobsError, setClearJobsError] = useState<string | null>(null);
+    const [clearJobsMessage, setClearJobsMessage] = useState<string | null>(null);
 
     useEffect(() => {
         fetchCV();
@@ -30,6 +34,24 @@ export function Settings() {
             } catch {
                 // Error handled in store
             }
+        }
+    };
+
+    const handleClearJobs = async () => {
+        if (!confirm('Delete all jobs? This cannot be undone.')) {
+            return;
+        }
+
+        setClearingJobs(true);
+        setClearJobsError(null);
+        setClearJobsMessage(null);
+        try {
+            await api.del('/jobs');
+            setClearJobsMessage('All jobs have been deleted.');
+        } catch (err) {
+            setClearJobsError((err as Error).message);
+        } finally {
+            setClearingJobs(false);
         }
     };
 
@@ -171,6 +193,37 @@ export function Settings() {
                     <p className="mt-4 text-sm text-gray-500">
                         API keys are configured in the server's .env file.
                     </p>
+                </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-white rounded-lg shadow border border-red-200">
+                <div className="p-6 border-b border-red-100">
+                    <h3 className="text-lg font-medium text-red-700">
+                        Danger Zone
+                    </h3>
+                    <p className="mt-1 text-sm text-red-600">
+                        This action is irreversible.
+                    </p>
+                </div>
+                <div className="p-6 space-y-3">
+                    {clearJobsError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                            {clearJobsError}
+                        </div>
+                    )}
+                    {clearJobsMessage && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700 text-sm">
+                            {clearJobsMessage}
+                        </div>
+                    )}
+                    <button
+                        onClick={handleClearJobs}
+                        disabled={clearingJobs}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                        {clearingJobs ? 'Clearing Jobs...' : 'Delete All Jobs'}
+                    </button>
                 </div>
             </div>
         </div>

@@ -33,12 +33,13 @@
 - Database UNIQUE constraint on `serpapi_job_id`
 - Location: `packages/server/src/repositories/job.repository.ts`
 
-### 4. Search Profiles - Location is OPTIONAL
+### 4. Search Profiles - Location is OPTIONAL, date_posted is REQUIRED
 
-**Configuration:** Keywords (required), location (optional), date range, radius
+**Configuration:** Keywords (required), location (optional), date_posted (required), radius
 
 - **Empty location = Global search** (worldwide results)
-- SerpAPI params: `q`, `hl='en'`, optional `location` + `lrad`
+- **date_posted is mandatory** (today, 3days, week, month)
+- SerpAPI params: `q`, `hl='en'`, optional `location` + `lrad`, `chips: date_posted:...`
 - "No results" from SerpAPI is valid response (returns 0 jobs)
 - Location: `packages/server/src/services/search.service.ts`
 
@@ -215,6 +216,15 @@ if (!input.location) {
 if (profile.location && profile.location.trim()) {
     params.location = profile.location;
 }
+```
+
+### Missing date_posted Field
+```typescript
+// WRONG - date_posted is required
+service.create({ name: 'Test', keywords: 'react', location: '' })
+
+// RIGHT - always provide date_posted
+service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'week' })
 ```
 
 ---

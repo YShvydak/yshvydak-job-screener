@@ -57,6 +57,15 @@ export class JobService {
     }
 
     /**
+     * Delete all jobs
+     */
+    clearAll(): number {
+        const deletedCount = this.jobRepository.deleteAll();
+        Logger.info('All jobs deleted', { deletedCount });
+        return deletedCount;
+    }
+
+    /**
      * Get job statistics by status
      */
     getStats(): Record<JobStatus | 'total', number> {

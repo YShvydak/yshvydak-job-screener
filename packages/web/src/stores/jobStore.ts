@@ -16,6 +16,7 @@ interface JobState {
     loading: boolean;
     error: string | null;
     filters: JobFilters;
+    analyzingJobs: Set<string>; // Track which jobs are being analyzed
     // Actions
     fetchJobs: () => Promise<void>;
     fetchStats: () => Promise<void>;
@@ -31,6 +32,7 @@ export const useJobStore = create<JobState>()((set, get) => ({
     loading: false,
     error: null,
     filters: {},
+    analyzingJobs: new Set<string>(),
 
     fetchJobs: async () => {
         set({ loading: true, error: null });
@@ -86,17 +88,32 @@ export const useJobStore = create<JobState>()((set, get) => ({
     },
 
     analyzeJob: async (id) => {
-        set({ loading: true, error: null });
+        // Add job to analyzing set
+        set((state) => ({
+            analyzingJobs: new Set(state.analyzingJobs).add(id),
+            error: null
+        }));
         try {
             const data = await api.post<{ analysis: any }>(`/ai/analyze/${id}`, {});
             set((state) => ({
                 jobs: state.jobs.map((j) =>
                     j.id === id ? { ...j, analysis: data.analysis } : j
                 ),
-                loading: false
+                analyzingJobs: (() => {
+                    const newSet = new Set(state.analyzingJobs);
+                    newSet.delete(id);
+                    return newSet;
+                })()
             }));
         } catch (error) {
-            set({ error: (error as Error).message, loading: false });
+            set((state) => ({
+                error: (error as Error).message,
+                analyzingJobs: (() => {
+                    const newSet = new Set(state.analyzingJobs);
+                    newSet.delete(id);
+                    return newSet;
+                })()
+            }));
             throw error;
         }
     },

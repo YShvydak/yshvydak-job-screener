@@ -178,8 +178,8 @@ POST /api/profiles
     "name": "QA Automation - Tel Aviv",
     "keywords": "QA Automation Engineer, SDET, Test Automation",
     "location": "Tel Aviv, Israel",
-    "date_posted": "week",  // today, 3days, week, month
-    "radius": 50            // km
+    "date_posted": "week",  // REQUIRED: today, 3days, week, month
+    "radius": 50            // km (optional)
 }
 ```
 

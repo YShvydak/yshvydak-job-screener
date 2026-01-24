@@ -10,7 +10,6 @@ import Database from 'better-sqlite3'
 import fs from 'fs'
 import path from 'path'
 import { JobRepository } from '../../../repositories/job.repository'
-import { fixtures } from '../../helpers/fixtures'
 
 describe('JobRepository', () => {
   let db: Database.Database
@@ -24,6 +23,13 @@ describe('JobRepository', () => {
     const schemaPath = path.join(__dirname, '../../../database/schema.sql')
     const schema = fs.readFileSync(schemaPath, 'utf-8')
     db.exec(schema)
+
+    // Create a test profile for foreign key constraint
+    const now = new Date().toISOString()
+    db.prepare(`
+      INSERT INTO search_profiles (id, name, keywords, location, date_posted, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('test-profile', 'Test Profile', 'test keywords', 'Test Location', 'week', 1, now, now)
 
     repository = new JobRepository(db)
   })
@@ -133,6 +139,7 @@ describe('JobRepository', () => {
     it('should create job with minimal required fields', () => {
       // Act
       const result = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_minimal',
         title: 'Minimal Job',
       })
@@ -148,6 +155,7 @@ describe('JobRepository', () => {
     it('should throw error on duplicate serpapi_job_id (UNIQUE constraint)', () => {
       // Arrange - create first job
       repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_duplicate',
         title: 'First Job',
       })
@@ -155,6 +163,7 @@ describe('JobRepository', () => {
       // Act & Assert - try to create duplicate
       expect(() => {
         repository.create({
+          profile_id: 'test-profile',
           serpapi_job_id: 'serp_duplicate',
           title: 'Duplicate Job',
         })
@@ -164,11 +173,13 @@ describe('JobRepository', () => {
     it('should generate unique UUID for each job', () => {
       // Act
       const job1 = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_1',
         title: 'Job 1',
       })
 
       const job2 = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_2',
         title: 'Job 2',
       })
@@ -186,6 +197,7 @@ describe('JobRepository', () => {
     it('should return job when id exists', () => {
       // Arrange
       const created = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_find',
         title: 'Find Me',
       })
@@ -275,6 +287,7 @@ describe('JobRepository', () => {
     it('should update job status', () => {
       // Arrange
       const job = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_status',
         title: 'Status Test',
       })
@@ -299,6 +312,7 @@ describe('JobRepository', () => {
     it('should update updated_at timestamp', () => {
       // Arrange
       const job = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_timestamp',
         title: 'Timestamp Test',
       })
@@ -325,6 +339,7 @@ describe('JobRepository', () => {
     it('should delete existing job', () => {
       // Arrange
       const job = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_delete',
         title: 'Delete Me',
       })
@@ -347,14 +362,40 @@ describe('JobRepository', () => {
   })
 
   // ============================================
+  // deleteAll
+  // ============================================
+  describe('deleteAll', () => {
+    it('should delete all jobs and return count', () => {
+      // Arrange
+      repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_delete_all_1', title: 'Job 1' })
+      repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_delete_all_2', title: 'Job 2' })
+
+      // Act
+      const deleted = repository.deleteAll()
+
+      // Assert
+      expect(deleted).toBe(2)
+      expect(repository.findAll()).toHaveLength(0)
+    })
+
+    it('should return 0 when no jobs exist', () => {
+      // Act
+      const deleted = repository.deleteAll()
+
+      // Assert
+      expect(deleted).toBe(0)
+    })
+  })
+
+  // ============================================
   // countByStatus
   // ============================================
   describe('countByStatus', () => {
     it('should return correct counts per status', () => {
       // Arrange
-      const job1 = repository.create({ serpapi_job_id: 'serp_c1', title: 'Job 1' })
-      const job2 = repository.create({ serpapi_job_id: 'serp_c2', title: 'Job 2' })
-      repository.create({ serpapi_job_id: 'serp_c3', title: 'Job 3' })
+      const job1 = repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_c1', title: 'Job 1' })
+      const job2 = repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_c2', title: 'Job 2' })
+      repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_c3', title: 'Job 3' })
 
       repository.updateStatus(job1.id, 'applied')
       repository.updateStatus(job2.id, 'applied')
@@ -387,6 +428,7 @@ describe('JobRepository', () => {
     it('should return jobs with analysis data when analysis exists', () => {
       // Arrange - create job and analysis
       const job = repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_analysis',
         title: 'Analysis Test',
       })
@@ -410,6 +452,7 @@ describe('JobRepository', () => {
     it('should return jobs without analysis when no analysis exists', () => {
       // Arrange
       repository.create({
+        profile_id: 'test-profile',
         serpapi_job_id: 'serp_no_analysis',
         title: 'No Analysis',
       })
@@ -424,8 +467,8 @@ describe('JobRepository', () => {
 
     it('should filter by minScore', () => {
       // Arrange - create jobs with different scores
-      const job1 = repository.create({ serpapi_job_id: 'serp_s1', title: 'High Score' })
-      const job2 = repository.create({ serpapi_job_id: 'serp_s2', title: 'Low Score' })
+      const job1 = repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_s1', title: 'High Score' })
+      const job2 = repository.create({ profile_id: 'test-profile', serpapi_job_id: 'serp_s2', title: 'Low Score' })
 
       const now = new Date().toISOString()
       db.prepare(`

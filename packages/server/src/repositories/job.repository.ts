@@ -165,6 +165,15 @@ export class JobRepository {
     }
 
     /**
+     * Delete all jobs
+     */
+    deleteAll(): number {
+        const stmt = this.db.prepare('DELETE FROM jobs');
+        const result = stmt.run();
+        return result.changes;
+    }
+
+    /**
      * Count jobs by status
      */
     countByStatus(): Record<JobStatus | 'total', number> {

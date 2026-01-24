@@ -14,6 +14,8 @@ interface SerpAPIJobResult {
     company_name?: string;
     location?: string;
     description?: string;
+    snippet?: string; // Alternative description field
+    share_link?: string;
     detected_extensions?: {
         posted_at?: string;
         schedule_type?: string;
@@ -23,6 +25,7 @@ interface SerpAPIJobResult {
         link: string;
     }>;
     via?: string;
+    extensions?: string[]; // Array of metadata strings
 }
 
 interface SerpAPIResponse {
@@ -161,8 +164,16 @@ export class SearchService {
         let duplicates = 0;
 
         for (const job of jobs) {
+            const resolvedJobId =
+                job.job_id?.trim() ||
+                job.share_link?.trim() ||
+                job.apply_options?.[0]?.link?.trim() ||
+                `fallback:${[job.title, job.company_name, job.location, job.detected_extensions?.posted_at]
+                    .filter(Boolean)
+                    .join('|')}`;
+
             // ⚠️ CRITICAL: Check for existing job by SerpAPI ID
-            const existing = this.jobRepository.findBySerpAPIId(job.job_id);
+            const existing = this.jobRepository.findBySerpAPIId(resolvedJobId);
 
             if (existing) {
                 duplicates++;
@@ -171,15 +182,19 @@ export class SearchService {
             }
 
             // Get the first apply link if available
-            const applyLink = job.apply_options?.[0]?.link;
+            const applyLink = job.apply_options?.[0]?.link || job.share_link;
 
+            // Extract description from available fields
+            // SerpAPI may provide description in different fields
+            const description = job.description || job.snippet || undefined;
+            
             const jobInput: JobInput = {
                 profile_id: profileId,
-                serpapi_job_id: job.job_id,
+                serpapi_job_id: resolvedJobId,
                 title: job.title,
                 company: job.company_name,
                 location: job.location,
-                description: job.description,
+                description: description,
                 apply_link: applyLink,
                 posted_date: job.detected_extensions?.posted_at,
                 source: job.via

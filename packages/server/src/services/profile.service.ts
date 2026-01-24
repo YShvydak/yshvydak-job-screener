@@ -50,11 +50,20 @@ export class ProfileService {
             throw new Error(`Profile not found: ${id}`);
         }
 
-        if (input.name || input.keywords || input.location) {
+        const shouldValidate =
+            input.name !== undefined ||
+            input.keywords !== undefined ||
+            input.location !== undefined ||
+            input.radius !== undefined ||
+            input.date_posted !== undefined;
+
+        if (shouldValidate) {
             this.validateInput({
                 name: input.name ?? existing.name,
                 keywords: input.keywords ?? existing.keywords,
-                location: input.location ?? existing.location
+                location: input.location ?? existing.location,
+                date_posted: input.date_posted ?? existing.date_posted ?? 'today',
+                radius: input.radius ?? existing.radius ?? undefined
             });
         }
 
@@ -111,8 +120,12 @@ export class ProfileService {
             throw new Error('Radius must be between 0 and 500 km');
         }
 
+        if (!input.date_posted) {
+            throw new Error('Date posted is required');
+        }
+
         const validDatePosted = ['today', '3days', 'week', 'month'];
-        if (input.date_posted && !validDatePosted.includes(input.date_posted)) {
+        if (!validDatePosted.includes(input.date_posted)) {
             throw new Error(`Invalid date_posted value. Must be one of: ${validDatePosted.join(', ')}`);
         }
     }

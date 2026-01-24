@@ -12,7 +12,7 @@ const STATUS_COLORS: Record<JobStatus, string> = {
 };
 
 export function Jobs() {
-    const { jobs, loading, error, filters, fetchJobs, updateStatus, deleteJob, analyzeJob, setFilters } = useJobStore();
+    const { jobs, loading, error, filters, analyzingJobs, fetchJobs, updateStatus, deleteJob, analyzeJob, setFilters } = useJobStore();
     const [expandedJob, setExpandedJob] = useState<string | null>(null);
 
     useEffect(() => {
@@ -83,6 +83,7 @@ export function Jobs() {
                         onStatusChange={handleStatusChange}
                         onAnalyze={handleAnalyze}
                         onDelete={deleteJob}
+                        isAnalyzing={analyzingJobs.has(job.id)}
                     />
                 ))}
 
@@ -105,7 +106,8 @@ function JobCard({
     onToggle,
     onStatusChange,
     onAnalyze,
-    onDelete
+    onDelete,
+    isAnalyzing
 }: {
     job: JobWithAnalysis;
     isExpanded: boolean;
@@ -113,6 +115,7 @@ function JobCard({
     onStatusChange: (jobId: string, status: JobStatus) => void;
     onAnalyze: (jobId: string) => void;
     onDelete: (jobId: string) => void;
+    isAnalyzing: boolean;
 }) {
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -162,13 +165,22 @@ function JobCard({
             {isExpanded && (
                 <div className="border-t border-gray-200 p-4 space-y-4">
                     {/* Description */}
-                    {job.description && (
+                    {job.description ? (
                         <div>
                             <h4 className="text-sm font-medium text-gray-700 mb-2">
                                 Description
                             </h4>
                             <p className="text-sm text-gray-600 whitespace-pre-wrap">
                                 {job.description}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                Description
+                            </h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                                Job description is not available from the search results. Please use the "Apply" button below to view full job details on the employer's website.
                             </p>
                         </div>
                     )}
@@ -235,9 +247,20 @@ function JobCard({
                                         e.stopPropagation();
                                         onAnalyze(job.id);
                                     }}
-                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                    disabled={isAnalyzing}
+                                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                                 >
-                                    Analyze
+                                    {isAnalyzing ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Analyzing...</span>
+                                        </>
+                                    ) : (
+                                        <span>Analyze</span>
+                                    )}
                                 </button>
                             )}
 

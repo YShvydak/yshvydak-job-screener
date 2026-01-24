@@ -65,7 +65,16 @@ export class ProfileController {
             const profile = this.profileService.create(input);
             ResponseHelper.created(res, { profile });
         } catch (error) {
-            ResponseHelper.error(res, error);
+            // Validation errors should return 400
+            if (error instanceof Error && (
+                error.message.includes('required') ||
+                error.message.includes('Invalid') ||
+                error.message.includes('must be')
+            )) {
+                ResponseHelper.badRequest(res, error.message);
+            } else {
+                ResponseHelper.error(res, error);
+            }
         }
     };
 
@@ -80,7 +89,16 @@ export class ProfileController {
             const profile = this.profileService.update(id, input);
             ResponseHelper.success(res, { profile });
         } catch (error) {
-            ResponseHelper.error(res, error);
+            // Validation errors should return 400
+            if (error instanceof Error && (
+                error.message.includes('required') ||
+                error.message.includes('Invalid') ||
+                error.message.includes('must be')
+            )) {
+                ResponseHelper.badRequest(res, error.message);
+            } else {
+                ResponseHelper.error(res, error);
+            }
         }
     };
 

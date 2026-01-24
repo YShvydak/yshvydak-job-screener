@@ -283,6 +283,109 @@ describe('SearchService', () => {
       expect(jobs).toHaveLength(2)
     })
 
+    it('should dedupe using share_link when job_id is missing', async () => {
+      // Arrange
+      seedProfile({ id: 'profile-share-link' })
+      const response = {
+        jobs_results: [
+          {
+            job_id: null,
+            title: 'QA Automation Engineer',
+            company_name: 'QA Co',
+            location: 'Remote',
+            share_link: 'https://example.com/jobs/qa-automation',
+            detected_extensions: { posted_at: '1 day ago' },
+          } as any,
+        ],
+      }
+
+      const { getJson } = await import('serpapi')
+      vi.mocked(getJson)
+        .mockResolvedValueOnce(response)
+        .mockResolvedValueOnce(response)
+
+      // Act
+      const first = await searchService.executeSearch('profile-share-link')
+      const second = await searchService.executeSearch('profile-share-link')
+
+      // Assert
+      expect(first.newJobs).toBe(1)
+      expect(second.newJobs).toBe(0)
+
+      const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0].serpapi_job_id).toBe('https://example.com/jobs/qa-automation')
+    })
+
+    it('should dedupe using apply link when share_link and job_id are missing', async () => {
+      // Arrange
+      seedProfile({ id: 'profile-apply-link' })
+      const response = {
+        jobs_results: [
+          {
+            job_id: null,
+            title: 'SDET',
+            company_name: 'Test Co',
+            location: 'Remote',
+            apply_options: [{ title: 'Apply', link: 'https://apply.example.com/sdet' }],
+            detected_extensions: { posted_at: '2 days ago' },
+          } as any,
+        ],
+      }
+
+      const { getJson } = await import('serpapi')
+      vi.mocked(getJson)
+        .mockResolvedValueOnce(response)
+        .mockResolvedValueOnce(response)
+
+      // Act
+      const first = await searchService.executeSearch('profile-apply-link')
+      const second = await searchService.executeSearch('profile-apply-link')
+
+      // Assert
+      expect(first.newJobs).toBe(1)
+      expect(second.newJobs).toBe(0)
+
+      const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0].serpapi_job_id).toBe('https://apply.example.com/sdet')
+    })
+
+    it('should dedupe using fallback identifier when no links are present', async () => {
+      // Arrange
+      seedProfile({ id: 'profile-fallback' })
+      const response = {
+        jobs_results: [
+          {
+            job_id: null,
+            title: 'Manual QA',
+            company_name: 'Quality Inc',
+            location: 'Berlin',
+            detected_extensions: { posted_at: '3 days ago' },
+          } as any,
+        ],
+      }
+
+      const { getJson } = await import('serpapi')
+      vi.mocked(getJson)
+        .mockResolvedValueOnce(response)
+        .mockResolvedValueOnce(response)
+
+      // Act
+      const first = await searchService.executeSearch('profile-fallback')
+      const second = await searchService.executeSearch('profile-fallback')
+
+      // Assert
+      expect(first.newJobs).toBe(1)
+      expect(second.newJobs).toBe(0)
+
+      const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0].serpapi_job_id).toBe(
+        'fallback:Manual QA|Quality Inc|Berlin|3 days ago'
+      )
+    })
+
     it('should correctly map SerpAPI fields to job entity', async () => {
       // Arrange
       seedProfile({ id: 'profile-map' })

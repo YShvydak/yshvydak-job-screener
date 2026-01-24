@@ -1,0 +1,74 @@
+/**
+ * Settings API Integration Tests
+ */
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import request from 'supertest'
+import {
+  setupTestServer,
+  teardownTestServer,
+  cleanTestDatabase,
+  type TestServerInstance,
+} from '../helpers/testServer'
+import { seedSettings } from '../helpers/database'
+import { fixtures } from '../helpers/fixtures'
+
+describe('Settings API Integration', () => {
+  let server: TestServerInstance
+
+  beforeAll(async () => {
+    server = await setupTestServer()
+  })
+
+  afterAll(async () => {
+    await teardownTestServer(server)
+  })
+
+  beforeEach(() => {
+    cleanTestDatabase(server)
+  })
+
+  it('GET /api/settings should return settings map', async () => {
+    const response = await request(server.app).get('/api/settings').expect(200)
+
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.settings).toHaveProperty('cv_content')
+  })
+
+  it('GET /api/settings/cv should return empty when not set', async () => {
+    const response = await request(server.app).get('/api/settings/cv').expect(200)
+
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.cv_content).toBe('')
+    expect(response.body.data.has_cv).toBe(false)
+  })
+
+  it('POST /api/settings/cv should validate input', async () => {
+    const response = await request(server.app).post('/api/settings/cv').send({}).expect(400)
+
+    expect(response.body.success).toBe(false)
+    expect(response.body.error).toContain('CV content is required')
+  })
+
+  it('POST /api/settings/cv should update CV', async () => {
+    const response = await request(server.app)
+      .post('/api/settings/cv')
+      .send({ content: fixtures.settings.cv_content })
+      .expect(200)
+
+    expect(response.body.success).toBe(true)
+    expect(response.body.data.length).toBe(fixtures.settings.cv_content.length)
+  })
+
+  it('DELETE /api/settings/cv should clear CV', async () => {
+    seedSettings(server.db, fixtures.settings.cv_content)
+
+    const response = await request(server.app).delete('/api/settings/cv').expect(200)
+
+    expect(response.body.success).toBe(true)
+
+    const getResponse = await request(server.app).get('/api/settings/cv')
+    expect(getResponse.body.data.cv_content).toBe('')
+    expect(getResponse.body.data.has_cv).toBe(false)
+  })
+})

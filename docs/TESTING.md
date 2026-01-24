@@ -1,7 +1,7 @@
 # Testing Guide
 
 > **Stack:** Vitest 3.2 + Supertest + React Testing Library
-> **Total Tests:** 54 (51 server + 3 web)
+> **Total Tests:** 176 (148 server + 28 web)
 
 ---
 
@@ -26,14 +26,32 @@ packages/server/src/__tests__/
 │   └── testServer.ts    # setupTestServer(), teardownTestServer()
 ├── unit/
 │   ├── repositories/
-│   │   └── job.repository.test.ts    # 24 tests
+│   │   ├── job.repository.test.ts
+│   │   ├── profile.repository.test.ts
+│   │   ├── settings.repository.test.ts
+│   │   └── analysis.repository.test.ts
 │   └── services/
-│       └── search.service.test.ts    # 11 tests
+│       ├── search.service.test.ts
+│       ├── job.service.test.ts
+│       ├── profile.service.test.ts
+│       └── ai.service.test.ts
 └── integration/
-    └── jobs.integration.test.ts      # 16 tests
+    ├── jobs.integration.test.ts
+    ├── profiles.integration.test.ts
+    ├── settings.integration.test.ts
+    ├── search.integration.test.ts
+    └── ai.integration.test.ts
 
 packages/web/src/__tests__/
-└── setup.test.ts                     # 3 tests (environment check)
+├── setup.test.ts                     # environment check
+├── jobStore.test.ts
+├── profileStore.test.ts
+├── settingsStore.test.ts
+├── client.test.ts
+├── Dashboard.test.tsx
+├── Jobs.test.tsx
+├── Profiles.test.tsx
+└── Settings.test.tsx
 ```
 
 ---
@@ -129,7 +147,8 @@ cleanTestDatabase()    // Clears all tables
 
 1. **Unit test** → `packages/server/src/__tests__/unit/{layer}/{name}.test.ts`
 2. **Integration test** → `packages/server/src/__tests__/integration/{name}.integration.test.ts`
-3. **Component test** → `packages/web/src/__tests__/components/{Name}.test.tsx`
+3. **UI/Page test** → `packages/web/src/__tests__/{Name}.test.tsx`
+4. **Store test** → `packages/web/src/__tests__/{storeName}.test.ts`
 
 **Rules:**
 - Use fixtures from `helpers/fixtures.ts`

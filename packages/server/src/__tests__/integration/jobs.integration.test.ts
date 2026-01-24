@@ -268,6 +268,42 @@ describe('Jobs API Integration', () => {
   })
 
   // ============================================
+  // DELETE /api/jobs - Delete all jobs
+  // ============================================
+  describe('DELETE /api/jobs', () => {
+    it('should delete all jobs and analyses', async () => {
+      // Arrange
+      seedProfile(server.db)
+      seedJob(server.db, { ...fixtures.job, id: 'job-1', serpapi_job_id: 'serp_1' })
+      seedJob(server.db, { ...fixtures.job, id: 'job-2', serpapi_job_id: 'serp_2' })
+      seedAnalysis(server.db, { ...fixtures.analysis, job_id: 'job-1' })
+      seedAnalysis(server.db, { ...fixtures.analysisLowScore, job_id: 'job-2', id: 'analysis-2' })
+
+      // Act
+      const response = await request(server.app).delete('/api/jobs').expect(200)
+
+      // Assert
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.deletedCount).toBe(2)
+
+      const jobs = await request(server.app).get('/api/jobs').expect(200)
+      expect(jobs.body.data.jobs).toHaveLength(0)
+
+      const analyses = server.db.prepare('SELECT * FROM ai_analyses').all()
+      expect(analyses).toHaveLength(0)
+    })
+
+    it('should return 0 when no jobs exist', async () => {
+      // Act
+      const response = await request(server.app).delete('/api/jobs').expect(200)
+
+      // Assert
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.deletedCount).toBe(0)
+    })
+  })
+
+  // ============================================
   // GET /api/jobs/stats - Job statistics
   // ============================================
   describe('GET /api/jobs/stats', () => {

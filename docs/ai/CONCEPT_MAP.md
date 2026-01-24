@@ -167,6 +167,7 @@ ProfileService.create(profileData)
   ├─ Validate input
   │   ├─ name required
   │   ├─ keywords required
+  │   ├─ date_posted required
   │   └─ location OPTIONAL (can be empty)
   └─ ProfileRepository.create({
         id: uuid(),

@@ -202,7 +202,7 @@ function ProfileForm({
     const [name, setName] = useState(initialData?.name || '');
     const [keywords, setKeywords] = useState(initialData?.keywords || '');
     const [location, setLocation] = useState(initialData?.location || '');
-    const [datePosted, setDatePosted] = useState<DatePosted | ''>(initialData?.date_posted || '');
+    const [datePosted, setDatePosted] = useState<DatePosted>(initialData?.date_posted || 'today');
     const [radius, setRadius] = useState(initialData?.radius?.toString() || '');
     const [submitting, setSubmitting] = useState(false);
 
@@ -214,7 +214,7 @@ function ProfileForm({
                 name,
                 keywords,
                 location,
-                date_posted: datePosted || undefined,
+                date_posted: datePosted,
                 radius: radius ? parseInt(radius, 10) : undefined
             });
         } finally {
@@ -268,14 +268,14 @@ function ProfileForm({
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700">
-                        Date Posted
+                        Date Posted <span className="text-red-500">*</span>
                     </label>
                     <select
                         value={datePosted}
-                        onChange={(e) => setDatePosted(e.target.value as DatePosted | '')}
+                        onChange={(e) => setDatePosted(e.target.value as DatePosted)}
+                        required
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
-                        <option value="">Any time</option>
                         {DATE_POSTED_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
