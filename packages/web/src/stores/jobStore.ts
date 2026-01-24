@@ -43,6 +43,7 @@ export const useJobStore = create<JobState>()((set, get) => ({
             if (filters.status) params.append('status', filters.status);
             if (filters.profileId) params.append('profileId', filters.profileId);
             if (filters.minScore !== undefined) params.append('minScore', String(filters.minScore));
+            if (filters.hasAnalysis !== undefined) params.append('hasAnalysis', String(filters.hasAnalysis));
 
             const data = await api.get<{ jobs: JobWithAnalysis[] }>(`/jobs?${params}`);
             set({ jobs: data.jobs, loading: false });

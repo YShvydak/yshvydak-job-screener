@@ -130,4 +130,52 @@ describe('Settings API Integration', () => {
       expect(response.body.success).toBe(false)
     })
   })
+
+  // ============================================
+  // API Status
+  // ============================================
+  describe('API Status', () => {
+    it('GET /api/settings/api-status should return API configuration status', async () => {
+      const response = await request(server.app).get('/api/settings/api-status').expect(200)
+
+      expect(response.body.success).toBe(true)
+      expect(response.body.data.status).toHaveProperty('serpapi')
+      expect(response.body.data.status).toHaveProperty('gemini')
+    })
+
+    it('GET /api/settings/api-status should return correct structure for SerpAPI', async () => {
+      const response = await request(server.app).get('/api/settings/api-status').expect(200)
+
+      const { serpapi } = response.body.data.status
+      expect(serpapi).toHaveProperty('configured')
+      expect(serpapi).toHaveProperty('name')
+      expect(serpapi).toHaveProperty('description')
+      expect(typeof serpapi.configured).toBe('boolean')
+      expect(serpapi.name).toBe('SerpAPI')
+      expect(serpapi.description).toBe('Job search API')
+    })
+
+    it('GET /api/settings/api-status should return correct structure for Gemini', async () => {
+      const response = await request(server.app).get('/api/settings/api-status').expect(200)
+
+      const { gemini } = response.body.data.status
+      expect(gemini).toHaveProperty('configured')
+      expect(gemini).toHaveProperty('name')
+      expect(gemini).toHaveProperty('description')
+      expect(typeof gemini.configured).toBe('boolean')
+      expect(gemini.name).toBe('Google Gemini')
+      expect(gemini.description).toBe('AI job analysis')
+    })
+
+    it('GET /api/settings/api-status should report configured status based on environment', async () => {
+      const response = await request(server.app).get('/api/settings/api-status').expect(200)
+
+      const { serpapi, gemini } = response.body.data.status
+
+      // In test environment, API keys should be configured (from .env or test setup)
+      // This test validates the endpoint returns boolean values
+      expect(typeof serpapi.configured).toBe('boolean')
+      expect(typeof gemini.configured).toBe('boolean')
+    })
+  })
 })

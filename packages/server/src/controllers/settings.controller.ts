@@ -2,12 +2,13 @@ import { Request, Response } from 'express';
 import { SettingsRepository } from '../repositories/settings.repository';
 import { ResponseHelper } from '../utils/ResponseHelper';
 import { Logger } from '../utils/Logger';
+import { env } from '../config/environment.config';
 
 /**
  * Controller for /api/settings endpoints
  */
 export class SettingsController {
-    constructor(private settingsRepository: SettingsRepository) {}
+    constructor(private settingsRepository: SettingsRepository) { }
 
     /**
      * GET /api/settings
@@ -110,6 +111,31 @@ export class SettingsController {
                 message: 'AI analysis method updated successfully',
                 method
             });
+        } catch (error) {
+            ResponseHelper.error(res, error);
+        }
+    };
+
+    /**
+     * GET /api/settings/api-status
+     * Get API keys configuration status
+     */
+    getAPIStatus = (_req: Request, res: Response): void => {
+        try {
+            const status = {
+                serpapi: {
+                    configured: !!env.SERPAPI_KEY && env.SERPAPI_KEY.length > 0,
+                    name: 'SerpAPI',
+                    description: 'Job search API'
+                },
+                gemini: {
+                    configured: !!env.GEMINI_API_KEY && env.GEMINI_API_KEY.length > 0,
+                    name: 'Google Gemini',
+                    description: 'AI job analysis'
+                }
+            };
+
+            ResponseHelper.success(res, { status });
         } catch (error) {
             ResponseHelper.error(res, error);
         }

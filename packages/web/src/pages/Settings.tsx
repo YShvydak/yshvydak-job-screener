@@ -3,6 +3,19 @@ import { AIAnalysisMethod } from '@yshvydak-job-screener/shared';
 import { useSettingsStore } from '../stores/settingsStore';
 import * as api from '../api/client';
 
+interface APIStatus {
+    serpapi: {
+        configured: boolean;
+        name: string;
+        description: string;
+    };
+    gemini: {
+        configured: boolean;
+        name: string;
+        description: string;
+    };
+}
+
 export function Settings() {
     const { cvContent, hasCV, aiMethod, loading, error, fetchCV, saveCV, deleteCV, fetchAIMethod, setAIMethod } = useSettingsStore();
     const [editingCV, setEditingCV] = useState(false);
@@ -10,11 +23,26 @@ export function Settings() {
     const [clearingJobs, setClearingJobs] = useState(false);
     const [clearJobsError, setClearJobsError] = useState<string | null>(null);
     const [clearJobsMessage, setClearJobsMessage] = useState<string | null>(null);
+    const [apiStatus, setApiStatus] = useState<APIStatus | null>(null);
+    const [loadingApiStatus, setLoadingApiStatus] = useState(true);
 
     useEffect(() => {
         fetchCV();
         fetchAIMethod();
+        fetchAPIStatus();
     }, []);
+
+    const fetchAPIStatus = async () => {
+        setLoadingApiStatus(true);
+        try {
+            const data = await api.get<{ status: APIStatus }>('/settings/api-status');
+            setApiStatus(data.status);
+        } catch (err) {
+            console.error('Failed to fetch API status:', err);
+        } finally {
+            setLoadingApiStatus(false);
+        }
+    };
 
     useEffect(() => {
         setCvText(cvContent);
@@ -228,26 +256,38 @@ export function Settings() {
                     </p>
                 </div>
                 <div className="p-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                            <div>
-                                <p className="font-medium text-gray-900">SerpAPI</p>
-                                <p className="text-sm text-gray-500">Job search API</p>
+                    {loadingApiStatus ? (
+                        <div className="text-center py-4 text-gray-500">Loading API status...</div>
+                    ) : apiStatus ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                                <div>
+                                    <p className="font-medium text-gray-900">{apiStatus.serpapi.name}</p>
+                                    <p className="text-sm text-gray-500">{apiStatus.serpapi.description}</p>
+                                </div>
+                                <span className={`px-3 py-1 text-sm rounded-full ${apiStatus.serpapi.configured
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                    {apiStatus.serpapi.configured ? 'Configured' : 'Requires API Key'}
+                                </span>
                             </div>
-                            <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full">
-                                Requires API Key
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between py-3">
-                            <div>
-                                <p className="font-medium text-gray-900">Google Gemini</p>
-                                <p className="text-sm text-gray-500">AI job analysis</p>
+                            <div className="flex items-center justify-between py-3">
+                                <div>
+                                    <p className="font-medium text-gray-900">{apiStatus.gemini.name}</p>
+                                    <p className="text-sm text-gray-500">{apiStatus.gemini.description}</p>
+                                </div>
+                                <span className={`px-3 py-1 text-sm rounded-full ${apiStatus.gemini.configured
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                    {apiStatus.gemini.configured ? 'Configured' : 'Requires API Key'}
+                                </span>
                             </div>
-                            <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full">
-                                Requires API Key
-                            </span>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="text-center py-4 text-red-500">Failed to load API status</div>
+                    )}
                     <p className="mt-4 text-sm text-gray-500">
                         API keys are configured in the server's .env file.
                     </p>

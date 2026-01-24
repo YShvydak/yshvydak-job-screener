@@ -488,5 +488,139 @@ describe('JobRepository', () => {
       expect(result).toHaveLength(1)
       expect(result[0].title).toBe('High Score')
     })
+
+    // ============================================
+    // Sorting Behavior Tests
+    // ============================================
+    it('should sort jobs by fetched_at DESC (newest first)', () => {
+      // Arrange - create jobs with different fetched_at timestamps
+      const baseTime = new Date('2026-01-24T10:00:00Z').getTime()
+
+      // Insert jobs directly with specific timestamps
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-1', 'serp_old', 'Old Job',
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString()
+      )
+
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-2', 'serp_new', 'New Job',
+        new Date(baseTime + 60000).toISOString(), // 1 minute later
+        new Date(baseTime + 60000).toISOString(),
+        new Date(baseTime + 60000).toISOString()
+      )
+
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-3', 'serp_middle', 'Middle Job',
+        new Date(baseTime + 30000).toISOString(), // 30 seconds later
+        new Date(baseTime + 30000).toISOString(),
+        new Date(baseTime + 30000).toISOString()
+      )
+
+      // Act
+      const result = repository.findAllWithAnalysis()
+
+      // Assert - should be sorted newest first
+      expect(result).toHaveLength(3)
+      expect(result[0].title).toBe('New Job')
+      expect(result[1].title).toBe('Middle Job')
+      expect(result[2].title).toBe('Old Job')
+    })
+
+    it('should maintain chronological order when AI analysis is added', () => {
+      // Arrange - create jobs with different timestamps
+      const baseTime = new Date('2026-01-24T10:00:00Z').getTime()
+
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-1', 'serp_1', 'Oldest Job',
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString()
+      )
+
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-2', 'serp_2', 'Newest Job',
+        new Date(baseTime + 120000).toISOString(), // 2 minutes later
+        new Date(baseTime + 120000).toISOString(),
+        new Date(baseTime + 120000).toISOString()
+      )
+
+      // Add AI analysis to the OLDEST job with high match score
+      const now = new Date().toISOString()
+      db.prepare(`
+        INSERT INTO ai_analyses (id, job_id, match_score, recommendation, strengths, gaps, reasoning, analyzed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run('analysis-1', 'job-1', 95, 'APPLY', '["skill1"]', '["gap1"]', 'Excellent match', now)
+
+      // Act
+      const result = repository.findAllWithAnalysis()
+
+      // Assert - newest job should still be first, even though oldest has higher match score
+      expect(result).toHaveLength(2)
+      expect(result[0].title).toBe('Newest Job')
+      expect(result[0].analysis).toBeUndefined()
+      expect(result[1].title).toBe('Oldest Job')
+      expect(result[1].analysis?.match_score).toBe(95)
+    })
+
+    it('should sort multiple analyzed jobs by fetched_at, not match_score', () => {
+      // Arrange - create jobs with different timestamps and match scores
+      const baseTime = new Date('2026-01-24T10:00:00Z').getTime()
+
+      // Job 1: Oldest, highest score
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-1', 'serp_1', 'Old High Score',
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString(),
+        new Date(baseTime).toISOString()
+      )
+
+      // Job 2: Newest, lowest score
+      db.prepare(`
+        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, 'new', ?, ?, ?)
+      `).run('job-2', 'serp_2', 'New Low Score',
+        new Date(baseTime + 60000).toISOString(),
+        new Date(baseTime + 60000).toISOString(),
+        new Date(baseTime + 60000).toISOString()
+      )
+
+      const now = new Date().toISOString()
+
+      // Add high score to old job
+      db.prepare(`
+        INSERT INTO ai_analyses (id, job_id, match_score, recommendation, analyzed_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run('a1', 'job-1', 90, 'APPLY', now)
+
+      // Add low score to new job
+      db.prepare(`
+        INSERT INTO ai_analyses (id, job_id, match_score, recommendation, analyzed_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run('a2', 'job-2', 30, 'SKIP', now)
+
+      // Act
+      const result = repository.findAllWithAnalysis()
+
+      // Assert - should be sorted by fetched_at DESC, not match_score
+      expect(result).toHaveLength(2)
+      expect(result[0].title).toBe('New Low Score')
+      expect(result[0].analysis?.match_score).toBe(30)
+      expect(result[1].title).toBe('Old High Score')
+      expect(result[1].analysis?.match_score).toBe(90)
+    })
   })
 })

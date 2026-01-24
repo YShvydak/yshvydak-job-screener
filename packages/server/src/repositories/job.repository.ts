@@ -7,7 +7,7 @@ import { Job, JobInput, JobFilters, JobStatus, JobWithAnalysis } from '@yshvydak
  * ⚠️ CRITICAL: Always use findBySerpAPIId() before create() to prevent duplicates
  */
 export class JobRepository {
-    constructor(private db: Database) {}
+    constructor(private db: Database) { }
 
     /**
      * Find all jobs with optional filters
@@ -72,11 +72,19 @@ export class JobRepository {
             params.push(filters.minScore);
         }
 
+        if (filters?.hasAnalysis !== undefined) {
+            if (filters.hasAnalysis) {
+                conditions.push('a.id IS NOT NULL');
+            } else {
+                conditions.push('a.id IS NULL');
+            }
+        }
+
         if (conditions.length > 0) {
             sql += ' WHERE ' + conditions.join(' AND ');
         }
 
-        sql += ' ORDER BY a.match_score DESC NULLS LAST, j.fetched_at DESC';
+        sql += ' ORDER BY j.fetched_at DESC';
 
         const stmt = this.db.prepare(sql);
         const rows = stmt.all(...params) as any[];

@@ -59,6 +59,7 @@ export interface JobFilters {
     status?: JobStatus;
     minScore?: number;
     profileId?: string;
+    hasAnalysis?: boolean; // Filter by AI analysis presence
 }
 
 /**

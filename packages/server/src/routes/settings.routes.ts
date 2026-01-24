@@ -25,5 +25,8 @@ export function createSettingsRoutes(controller: SettingsController): Router {
     // PUT /api/settings/ai-method - Set AI analysis method
     router.put('/ai-method', controller.setAIMethod);
 
+    // GET /api/settings/api-status - Get API keys status
+    router.get('/api-status', controller.getAPIStatus);
+
     return router;
 }

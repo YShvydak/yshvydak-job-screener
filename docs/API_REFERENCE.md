@@ -48,11 +48,14 @@ GET /api/jobs
 
 **Query Parameters:**
 
-| Parameter | Type   | Description                             |
-| --------- | ------ | --------------------------------------- |
-| status    | string | Filter by status (new/applied/saved/rejected) |
-| minScore  | number | Minimum match score (0-100)             |
-| profileId | string | Filter by search profile ID             |
+| Parameter   | Type    | Description                                      |
+| ----------- | ------- | ------------------------------------------------ |
+| status      | string  | Filter by status (new/applied/saved/rejected)    |
+| minScore    | number  | Minimum match score (0-100)                      |
+| profileId   | string  | Filter by search profile ID                      |
+| hasAnalysis | boolean | Filter by AI analysis presence (true/false)      |
+
+**Note:** Jobs are sorted by `fetched_at` DESC (newest first). AI analysis does not affect sort order.
 
 **Response:**
 
@@ -278,6 +281,7 @@ POST /api/search/run
 ```
 
 **Process:**
+
 1. Fetches jobs from SerpAPI using profile criteria
 2. Saves jobs to database (prevents duplicates)
 3. Optionally runs AI analysis on new jobs
@@ -344,6 +348,40 @@ GET /api/settings/cv
 ```
 
 **Response:** CV file content (text/plain)
+
+---
+
+### Get API Status
+
+```http
+GET /api/settings/api-status
+```
+
+**Description:** Check if external API keys (SerpAPI, Gemini) are configured.
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "status": {
+            "serpapi": {
+                "configured": true,
+                "name": "SerpAPI",
+                "description": "Job search API"
+            },
+            "gemini": {
+                "configured": true,
+                "name": "Google Gemini",
+                "description": "AI job analysis"
+            }
+        }
+    }
+}
+```
+
+**Note:** This endpoint checks if API keys are present in the server's environment variables. It does not validate if the keys are valid or have remaining quota.
 
 ---
 

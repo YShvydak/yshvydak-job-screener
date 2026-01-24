@@ -62,6 +62,18 @@ export function Jobs() {
                             </option>
                         ))}
                     </select>
+
+                    <select
+                        value={filters.hasAnalysis === undefined ? '' : filters.hasAnalysis ? 'true' : 'false'}
+                        onChange={(e) => setFilters({
+                            hasAnalysis: e.target.value === '' ? undefined : e.target.value === 'true'
+                        })}
+                        className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                    >
+                        <option value="">All Jobs</option>
+                        <option value="true">With AI Analysis</option>
+                        <option value="false">Without AI Analysis</option>
+                    </select>
                 </div>
             </div>
 
@@ -161,18 +173,22 @@ function JobCard({
                                 via {job.source}
                             </p>
                         )}
+                        {job.posted_date && (
+                            <p className="mt-1 text-xs text-gray-500">
+                                Posted: {job.posted_date}
+                            </p>
+                        )}
                     </div>
 
                     {/* Match Score */}
                     {job.analysis && (
                         <div className="ml-4 flex-shrink-0">
-                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                job.analysis.match_score >= 70
-                                    ? 'bg-green-100 text-green-800'
-                                    : job.analysis.match_score >= 40
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${job.analysis.match_score >= 70
+                                ? 'bg-green-100 text-green-800'
+                                : job.analysis.match_score >= 40
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : 'bg-red-100 text-red-800'
-                            }`}>
+                                }`}>
                                 {job.analysis.match_score}% Match
                             </div>
                         </div>

@@ -7,7 +7,7 @@ import { JobFilters, JobStatus } from '@yshvydak-job-screener/shared';
  * Controller for /api/jobs endpoints
  */
 export class JobController {
-    constructor(private jobService: JobService) {}
+    constructor(private jobService: JobService) { }
 
     /**
      * GET /api/jobs
@@ -25,6 +25,9 @@ export class JobController {
             }
             if (req.query.minScore) {
                 filters.minScore = parseInt(req.query.minScore as string, 10);
+            }
+            if (req.query.hasAnalysis !== undefined) {
+                filters.hasAnalysis = req.query.hasAnalysis === 'true';
             }
 
             // Include AI analysis if requested
