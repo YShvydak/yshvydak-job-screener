@@ -1,11 +1,11 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import {NavLink, Outlet} from 'react-router-dom'
 
 const navLinks = [
-    { to: '/', label: 'Dashboard' },
-    { to: '/jobs', label: 'Jobs' },
-    { to: '/profiles', label: 'Search Profiles' },
-    { to: '/settings', label: 'Settings' }
-];
+    {to: '/', label: 'Dashboard'},
+    {to: '/jobs', label: 'Jobs'},
+    {to: '/profiles', label: 'Search Profiles'},
+    {to: '/settings', label: 'Settings'},
+]
 
 export function Layout() {
     return (
@@ -15,23 +15,20 @@ export function Layout() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <h1 className="text-xl font-bold text-gray-900">
-                                Job Screener
-                            </h1>
+                            <h1 className="text-xl font-bold text-gray-900">Job Screener</h1>
                         </div>
                         <nav className="flex items-center space-x-1">
                             {navLinks.map((link) => (
                                 <NavLink
                                     key={link.to}
                                     to={link.to}
-                                    className={({ isActive }) =>
+                                    className={({isActive}) =>
                                         `px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                             isActive
                                                 ? 'bg-blue-100 text-blue-700'
                                                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                                         }`
-                                    }
-                                >
+                                    }>
                                     {link.label}
                                 </NavLink>
                             ))}
@@ -45,5 +42,5 @@ export function Layout() {
                 <Outlet />
             </main>
         </div>
-    );
+    )
 }

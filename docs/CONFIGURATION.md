@@ -15,6 +15,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 **Get API Keys:**
+
 - SerpAPI: [https://serpapi.com/users/sign_up](https://serpapi.com/users/sign_up)
 - Gemini AI: [https://ai.google.dev/](https://ai.google.dev/)
 
@@ -34,6 +35,7 @@ DATABASE_PATH=./data/jobs.db
 ```
 
 **Defaults:**
+
 - `PORT`: 3001
 - `NODE_ENV`: development
 - `DATABASE_PATH`: ./data/jobs.db
@@ -51,6 +53,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 ```
 
 **Defaults:**
+
 - `VITE_PORT`: 3000
 - `VITE_API_BASE_URL`: http://localhost:3001/api
 
@@ -84,6 +87,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 **Engine:** `google_jobs`
 
 **Supported Parameters:**
+
 - `q`: Keywords (from search profile)
 - `location`: Location (from search profile)
 - `date_posted`: today, 3days, week, month
@@ -100,6 +104,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 **Model:** `gemini-pro`
 
 **Usage:**
+
 - Job matching analysis
 - Match score calculation (0-100)
 - Strengths and gaps identification
@@ -119,6 +124,7 @@ VITE_API_BASE_URL=http://localhost:3001/api
 **Schema:** Auto-initialized on first run
 
 **Tables:**
+
 - `jobs` - Job listings
 - `ai_analyses` - AI match analyses
 - `search_profiles` - Search profiles
@@ -156,6 +162,7 @@ NODE_ENV=development
 ```
 
 **Features:**
+
 - Hot reload
 - Detailed error messages
 - Debug logging
@@ -168,6 +175,7 @@ NODE_ENV=production
 ```
 
 **Features:**
+
 - Optimized builds
 - Minimal logging
 - Error handling
@@ -180,11 +188,13 @@ NODE_ENV=production
 ### API Keys
 
 ❌ **NEVER:**
+
 - Commit `.env` to version control
 - Hardcode API keys in code
 - Share API keys publicly
 
 ✅ **ALWAYS:**
+
 - Use `.env` for sensitive data
 - Add `.env` to `.gitignore`
 - Use `.env.example` for documentation
@@ -192,6 +202,7 @@ NODE_ENV=production
 ### Database
 
 ✅ **Recommendations:**
+
 - Regular backups of SQLite file
 - Secure file permissions
 - Limit database access
@@ -205,6 +216,7 @@ NODE_ENV=production
 **Error:** `Missing required API keys in environment`
 
 **Solution:**
+
 1. Check `.env` file exists
 2. Verify `SERPAPI_KEY` and `GEMINI_API_KEY` are set
 3. Restart server: `npm run dev`
@@ -214,6 +226,7 @@ NODE_ENV=production
 **Error:** `SQLITE_CANTOPEN: unable to open database`
 
 **Solution:**
+
 1. Create data directory: `mkdir -p data`
 2. Check `DATABASE_PATH` in `.env`
 3. Verify write permissions
@@ -223,11 +236,12 @@ NODE_ENV=production
 **Error:** `Error: listen EADDRINUSE: address already in use`
 
 **Solution:**
+
 1. Change `PORT` or `VITE_PORT` in `.env`
 2. Or kill existing process:
-   ```bash
-   lsof -ti:3001 | xargs kill  # Kill process on port 3001
-   ```
+    ```bash
+    lsof -ti:3001 | xargs kill  # Kill process on port 3001
+    ```
 
 ---
 

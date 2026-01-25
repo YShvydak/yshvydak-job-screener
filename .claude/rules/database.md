@@ -1,7 +1,7 @@
 ---
 paths:
-  - packages/server/src/repositories/**
-  - packages/server/src/database/**
+    - packages/server/src/repositories/**
+    - packages/server/src/database/**
 ---
 
 # Database Rules (SQLite)
@@ -9,15 +9,16 @@ paths:
 ## Job Deduplication (CRITICAL)
 
 **ALWAYS check before insert:**
+
 ```typescript
 // CORRECT
-const existing = await this.jobRepository.findBySerpAPIId(serpApiJobId);
+const existing = await this.jobRepository.findBySerpAPIId(serpApiJobId)
 if (!existing) {
-    await this.jobRepository.create(jobData);
+    await this.jobRepository.create(jobData)
 }
 
 // WRONG - will fail on duplicate
-await this.jobRepository.create(jobData);
+await this.jobRepository.create(jobData)
 ```
 
 **Database constraint:** `UNIQUE(serpapi_job_id)`
@@ -25,6 +26,7 @@ await this.jobRepository.create(jobData);
 ## Schema Overview
 
 ### search_profiles
+
 - `id` TEXT PRIMARY KEY
 - `name` TEXT NOT NULL
 - `keywords` TEXT NOT NULL
@@ -34,6 +36,7 @@ await this.jobRepository.create(jobData);
 - `active` INTEGER (0/1)
 
 ### jobs
+
 - `id` TEXT PRIMARY KEY (UUID)
 - `serpapi_job_id` TEXT UNIQUE (for deduplication)
 - `profile_id` TEXT (FK to search_profiles)
@@ -42,6 +45,7 @@ await this.jobRepository.create(jobData);
 - `status` TEXT DEFAULT 'new' (new/applied/saved/rejected)
 
 ### ai_analyses
+
 - `id` TEXT PRIMARY KEY
 - `job_id` TEXT UNIQUE (one analysis per job)
 - `match_score` INTEGER (0-100)
@@ -50,6 +54,7 @@ await this.jobRepository.create(jobData);
 - `reasoning` TEXT
 
 ### settings
+
 - `key` TEXT PRIMARY KEY
 - `value` TEXT NOT NULL
 - Key values: `cv_content`, `last_search_date`
@@ -57,22 +62,24 @@ await this.jobRepository.create(jobData);
 ## SQL Best Practices
 
 ### Parameterized queries (ALWAYS):
+
 ```typescript
 // CORRECT
-const stmt = this.db.prepare('SELECT * FROM jobs WHERE id = ?');
-stmt.get(id);
+const stmt = this.db.prepare('SELECT * FROM jobs WHERE id = ?')
+stmt.get(id)
 
 // WRONG - SQL injection risk
-this.db.prepare(`SELECT * FROM jobs WHERE id = '${id}'`);
+this.db.prepare(`SELECT * FROM jobs WHERE id = '${id}'`)
 ```
 
 ### Transactions (for multiple operations):
+
 ```typescript
 const transaction = this.db.transaction(() => {
-    this.db.run('INSERT INTO jobs ...');
-    this.db.run('INSERT INTO ai_analyses ...');
-});
-transaction();
+    this.db.run('INSERT INTO jobs ...')
+    this.db.run('INSERT INTO ai_analyses ...')
+})
+transaction()
 ```
 
 ## Repository Methods Pattern

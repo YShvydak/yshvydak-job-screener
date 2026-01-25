@@ -7,24 +7,24 @@ export class Logger {
      * Log info message
      */
     static info(message: string, data?: any): void {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] ℹ️  INFO: ${message}`, data || '');
+        const timestamp = new Date().toISOString()
+        console.log(`[${timestamp}] ℹ️  INFO: ${message}`, data || '')
     }
 
     /**
      * Log error message
      */
     static error(message: string, error?: any): void {
-        const timestamp = new Date().toISOString();
-        console.error(`[${timestamp}] ❌ ERROR: ${message}`, error || '');
+        const timestamp = new Date().toISOString()
+        console.error(`[${timestamp}] ❌ ERROR: ${message}`, error || '')
     }
 
     /**
      * Log warning message
      */
     static warn(message: string, data?: any): void {
-        const timestamp = new Date().toISOString();
-        console.warn(`[${timestamp}] ⚠️  WARN: ${message}`, data || '');
+        const timestamp = new Date().toISOString()
+        console.warn(`[${timestamp}] ⚠️  WARN: ${message}`, data || '')
     }
 
     /**
@@ -32,8 +32,8 @@ export class Logger {
      */
     static debug(message: string, data?: any): void {
         if (process.env.NODE_ENV === 'development') {
-            const timestamp = new Date().toISOString();
-            console.log(`[${timestamp}] 🐛 DEBUG: ${message}`, data || '');
+            const timestamp = new Date().toISOString()
+            console.log(`[${timestamp}] 🐛 DEBUG: ${message}`, data || '')
         }
     }
 
@@ -41,7 +41,7 @@ export class Logger {
      * Log success message
      */
     static success(message: string, data?: any): void {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] ✅ SUCCESS: ${message}`, data || '');
+        const timestamp = new Date().toISOString()
+        console.log(`[${timestamp}] ✅ SUCCESS: ${message}`, data || '')
     }
 }

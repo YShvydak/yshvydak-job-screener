@@ -9,6 +9,7 @@
 ## Overview
 
 The AI Analysis feature evaluates how well a job matches the user's CV/resume using Google Gemini AI. It provides:
+
 - **Match Score** (0-100) - How well the candidate fits the job
 - **Recommendation** (APPLY/MAYBE/SKIP) - Action recommendation
 - **Strengths** - What makes the candidate a good fit
@@ -73,17 +74,17 @@ The AI Analysis feature evaluates how well a job matches the user's CV/resume us
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `shared/src/types/job.types.ts` | `AIAnalysisMethod` type (`'api' \| 'local'`) |
-| `packages/server/src/services/ai.service.ts` | Core AI analysis logic |
-| `packages/server/src/controllers/ai.controller.ts` | HTTP endpoint handlers |
-| `packages/server/src/repositories/settings.repository.ts` | AI method persistence |
-| `packages/server/src/repositories/analysis.repository.ts` | Analysis storage |
-| `packages/web/src/stores/settingsStore.ts` | Frontend settings state |
-| `packages/web/src/stores/jobStore.ts` | Job analysis actions |
-| `packages/web/src/pages/Jobs.tsx` | Analyze button dropdown |
-| `packages/web/src/pages/Settings.tsx` | Default method selection |
+| File                                                      | Purpose                                      |
+| --------------------------------------------------------- | -------------------------------------------- |
+| `shared/src/types/job.types.ts`                           | `AIAnalysisMethod` type (`'api' \| 'local'`) |
+| `packages/server/src/services/ai.service.ts`              | Core AI analysis logic                       |
+| `packages/server/src/controllers/ai.controller.ts`        | HTTP endpoint handlers                       |
+| `packages/server/src/repositories/settings.repository.ts` | AI method persistence                        |
+| `packages/server/src/repositories/analysis.repository.ts` | Analysis storage                             |
+| `packages/web/src/stores/settingsStore.ts`                | Frontend settings state                      |
+| `packages/web/src/stores/jobStore.ts`                     | Job analysis actions                         |
+| `packages/web/src/pages/Jobs.tsx`                         | Analyze button dropdown                      |
+| `packages/web/src/pages/Settings.tsx`                     | Default method selection                     |
 
 ---
 
@@ -94,13 +95,16 @@ The AI Analysis feature evaluates how well a job matches the user's CV/resume us
 Uses Google Gemini API via `@google/genai` SDK.
 
 **Requirements:**
+
 - `GEMINI_API_KEY` environment variable
 
 **Pros:**
+
 - Simple setup
 - Always available with valid API key
 
 **Cons:**
+
 - Requires API key
 - Internet connection required
 - API usage costs
@@ -110,15 +114,18 @@ Uses Google Gemini API via `@google/genai` SDK.
 Uses Gemini CLI tool installed locally.
 
 **Requirements:**
+
 - `gemini` CLI installed and in PATH
 - Authenticated via `gemini auth`
 
 **Pros:**
+
 - No API key needed in .env
 - Uses local authentication
 - May have different quota limits
 
 **Cons:**
+
 - Requires CLI installation
 - CLI must be authenticated
 
@@ -137,6 +144,7 @@ The Gemini CLI with `--output-format json` returns a wrapper object:
 ```
 
 The `extractCliResponse()` method handles:
+
 1. Finding JSON in stdout (skipping warnings)
 2. Extracting the `response` field
 3. Passing to common parser
@@ -146,6 +154,7 @@ The `extractCliResponse()` method handles:
 ## API Endpoints
 
 ### Analyze Single Job
+
 ```
 POST /api/ai/analyze/:jobId?method=api|local
 
@@ -168,12 +177,14 @@ Response:
 ```
 
 ### Analyze Batch
+
 ```
 POST /api/ai/analyze-batch?method=api|local
 Body: { "jobIds": ["id1", "id2", ...] }
 ```
 
 ### Get/Set Default Method
+
 ```
 GET /api/settings/ai-method
 PUT /api/settings/ai-method
@@ -203,35 +214,40 @@ CREATE TABLE ai_analyses (
 ## Frontend UI
 
 ### Settings Page
+
 Radio buttons to select default method:
+
 - **Cloud API** - Uses Google Gemini API
 - **Local CLI** - Uses gemini command
 
 ### Jobs Page
+
 Split button with dropdown:
+
 - Primary click: Uses default method
 - Dropdown: Choose specific method
-  - "Analyze (Cloud)"
-  - "Analyze (Local)"
+    - "Analyze (Cloud)"
+    - "Analyze (Local)"
 
 ---
 
 ## Error Handling
 
-| Error | Message | Cause |
-|-------|---------|-------|
-| API key missing | "GEMINI_API_KEY is not configured. Please use local CLI or configure API key." | No API key in .env |
-| CLI not installed | "Gemini CLI is not installed. Please install it or use the Cloud API method." | `gemini` not in PATH |
-| CLI timeout | "Gemini CLI timed out. The analysis took too long to complete." | Execution > 60s |
-| Parse error | "AI analysis failed to parse. Please try again." | Invalid JSON from AI |
-| Job not found | "Job not found: {id}" | Invalid job ID |
-| No CV | "CV content is not configured. Please upload your CV in settings." | CV not uploaded |
+| Error             | Message                                                                        | Cause                |
+| ----------------- | ------------------------------------------------------------------------------ | -------------------- |
+| API key missing   | "GEMINI_API_KEY is not configured. Please use local CLI or configure API key." | No API key in .env   |
+| CLI not installed | "Gemini CLI is not installed. Please install it or use the Cloud API method."  | `gemini` not in PATH |
+| CLI timeout       | "Gemini CLI timed out. The analysis took too long to complete."                | Execution > 60s      |
+| Parse error       | "AI analysis failed to parse. Please try again."                               | Invalid JSON from AI |
+| Job not found     | "Job not found: {id}"                                                          | Invalid job ID       |
+| No CV             | "CV content is not configured. Please upload your CV in settings."             | CV not uploaded      |
 
 ---
 
 ## Caching
 
 Analysis results are **cached per job**:
+
 - First analysis is saved to database
 - Subsequent requests return cached result
 - Cache is method-agnostic (same result regardless of method used)
@@ -243,21 +259,26 @@ To re-analyze: Delete the job and re-fetch, or add a "Re-analyze" feature.
 ## Testing
 
 ### Unit Tests
+
 ```
 packages/server/src/__tests__/unit/services/ai.service.test.ts
 ```
+
 - API method tests
 - CLI method tests
 - Method selection tests
 - Utility tests
 
 ### Integration Tests
+
 ```
 packages/server/src/__tests__/integration/settings.integration.test.ts
 ```
+
 - GET/PUT /api/settings/ai-method endpoints
 
 ### Run Tests
+
 ```bash
 npm test
 ```
@@ -267,12 +288,14 @@ npm test
 ## Configuration
 
 ### Environment Variables
+
 ```env
 # Required for Cloud API method
 GEMINI_API_KEY=your-api-key-here
 ```
 
 ### CLI Setup
+
 ```bash
 # Install Gemini CLI
 npm install -g @anthropic-ai/gemini-cli
@@ -326,15 +349,18 @@ Analyze the job-candidate fit and provide:
 ## Extending the Feature
 
 ### Adding New Methods
+
 1. Add method value to `AIAnalysisMethod` type
 2. Implement `generateAnalysisVia{Method}()` in ai.service.ts
 3. Update `analyzeJob()` switch logic
 4. Update frontend dropdown options
 
 ### Customizing Prompts
+
 Edit `buildPrompt()` in `ai.service.ts`
 
 ### Changing Models
+
 - API: Change `model` param in `generateAnalysisViaAPI()`
 - CLI: Add model flag to CLI command
 
@@ -343,11 +369,13 @@ Edit `buildPrompt()` in `ai.service.ts`
 ## Troubleshooting
 
 ### "AI analysis failed to parse"
+
 - Check Gemini response format in logs
 - Verify prompt is generating valid JSON
 - Try the other method (API vs CLI)
 
 ### CLI Not Found
+
 ```bash
 # Check if installed
 which gemini
@@ -357,6 +385,7 @@ npm install -g @anthropic-ai/gemini-cli
 ```
 
 ### Authentication Issues
+
 ```bash
 # Re-authenticate CLI
 gemini auth logout

@@ -48,12 +48,12 @@ GET /api/jobs
 
 **Query Parameters:**
 
-| Parameter   | Type    | Description                                      |
-| ----------- | ------- | ------------------------------------------------ |
-| status      | string  | Filter by status (new/applied/saved/rejected)    |
-| minScore    | number  | Minimum match score (0-100)                      |
-| profileId   | string  | Filter by search profile ID                      |
-| hasAnalysis | boolean | Filter by AI analysis presence (true/false)      |
+| Parameter   | Type    | Description                                   |
+| ----------- | ------- | --------------------------------------------- |
+| status      | string  | Filter by status (new/applied/saved/rejected) |
+| minScore    | number  | Minimum match score (0-100)                   |
+| profileId   | string  | Filter by search profile ID                   |
+| hasAnalysis | boolean | Filter by AI analysis presence (true/false)   |
 
 **Note:** Jobs are sorted by `fetched_at` DESC (newest first). AI analysis does not affect sort order.
 
@@ -119,7 +119,7 @@ PATCH /api/jobs/:id/status
 
 ```json
 {
-    "status": "applied"  // new, applied, saved, rejected
+    "status": "applied" // new, applied, saved, rejected
 }
 ```
 
@@ -181,8 +181,8 @@ POST /api/profiles
     "name": "QA Automation - Tel Aviv",
     "keywords": "QA Automation Engineer, SDET, Test Automation",
     "location": "Tel Aviv, Israel",
-    "date_posted": "week",  // REQUIRED: today, 3days, week, month
-    "radius": 50            // km (optional)
+    "date_posted": "week", // REQUIRED: today, 3days, week, month
+    "radius": 50 // km (optional)
 }
 ```
 
@@ -243,7 +243,7 @@ PATCH /api/profiles/:id/toggle
     "success": true,
     "data": {
         "id": "uuid",
-        "active": 0  // or 1
+        "active": 0 // or 1
     }
 }
 ```
@@ -263,7 +263,7 @@ POST /api/search/run
 ```json
 {
     "profileId": "uuid",
-    "analyzeWithAI": true  // optional, default: false
+    "analyzeWithAI": true // optional, default: false
 }
 ```
 
@@ -273,9 +273,9 @@ POST /api/search/run
 {
     "success": true,
     "data": {
-        "jobsFound": 25,      // Total from SerpAPI
-        "newJobs": 12,        // Actually saved (not duplicates)
-        "analyzed": true      // Whether AI analysis was run
+        "jobsFound": 25, // Total from SerpAPI
+        "newJobs": 12, // Actually saved (not duplicates)
+        "analyzed": true // Whether AI analysis was run
     }
 }
 ```
@@ -322,8 +322,8 @@ POST /api/settings/cv
 
 **Form Data:**
 
-| Field | Type | Description      |
-| ----- | ---- | ---------------- |
+| Field | Type | Description         |
+| ----- | ---- | ------------------- |
 | cv    | file | CV file (.md, .txt) |
 
 **Response:**
@@ -404,7 +404,7 @@ GET /api/dashboard/stats
         "applied_jobs": 8,
         "saved_jobs": 15,
         "rejected_jobs": 92,
-        "high_match_jobs": 23,  // Match score > 80
+        "high_match_jobs": 23, // Match score > 80
         "avg_match_score": 67
     }
 }
@@ -414,12 +414,12 @@ GET /api/dashboard/stats
 
 ## Error Codes
 
-| HTTP Status | Error Code | Description                    |
-| ----------- | ---------- | ------------------------------ |
-| 400         | BAD_REQUEST | Invalid request parameters    |
-| 404         | NOT_FOUND  | Resource not found             |
-| 500         | INTERNAL_ERROR | Server error                |
-| 503         | SERVICE_UNAVAILABLE | External API unavailable |
+| HTTP Status | Error Code          | Description                |
+| ----------- | ------------------- | -------------------------- |
+| 400         | BAD_REQUEST         | Invalid request parameters |
+| 404         | NOT_FOUND           | Resource not found         |
+| 500         | INTERNAL_ERROR      | Server error               |
+| 503         | SERVICE_UNAVAILABLE | External API unavailable   |
 
 **Example Error:**
 

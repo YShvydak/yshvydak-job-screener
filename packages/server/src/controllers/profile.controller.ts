@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { ProfileService } from '../services/profile.service';
-import { ResponseHelper } from '../utils/ResponseHelper';
-import { SearchProfileInput } from '@yshvydak-job-screener/shared';
+import {Request, Response} from 'express'
+import {ProfileService} from '../services/profile.service'
+import {ResponseHelper} from '../utils/ResponseHelper'
+import {SearchProfileInput} from '@yshvydak-job-screener/shared'
 
 /**
  * Controller for /api/profiles endpoints
@@ -15,12 +15,12 @@ export class ProfileController {
      */
     getAll = (_req: Request, res: Response): void => {
         try {
-            const profiles = this.profileService.getAll();
-            ResponseHelper.success(res, { profiles });
+            const profiles = this.profileService.getAll()
+            ResponseHelper.success(res, {profiles})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/profiles/active
@@ -28,12 +28,12 @@ export class ProfileController {
      */
     getActive = (_req: Request, res: Response): void => {
         try {
-            const profiles = this.profileService.getActive();
-            ResponseHelper.success(res, { profiles });
+            const profiles = this.profileService.getActive()
+            ResponseHelper.success(res, {profiles})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/profiles/:id
@@ -41,19 +41,19 @@ export class ProfileController {
      */
     getById = (req: Request, res: Response): void => {
         try {
-            const { id } = req.params;
-            const profile = this.profileService.getById(id);
+            const {id} = req.params
+            const profile = this.profileService.getById(id)
 
             if (!profile) {
-                ResponseHelper.notFound(res, 'Profile not found');
-                return;
+                ResponseHelper.notFound(res, 'Profile not found')
+                return
             }
 
-            ResponseHelper.success(res, { profile });
+            ResponseHelper.success(res, {profile})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * POST /api/profiles
@@ -61,22 +61,23 @@ export class ProfileController {
      */
     create = (req: Request, res: Response): void => {
         try {
-            const input: SearchProfileInput = req.body;
-            const profile = this.profileService.create(input);
-            ResponseHelper.created(res, { profile });
+            const input: SearchProfileInput = req.body
+            const profile = this.profileService.create(input)
+            ResponseHelper.created(res, {profile})
         } catch (error) {
             // Validation errors should return 400
-            if (error instanceof Error && (
-                error.message.includes('required') ||
-                error.message.includes('Invalid') ||
-                error.message.includes('must be')
-            )) {
-                ResponseHelper.badRequest(res, error.message);
+            if (
+                error instanceof Error &&
+                (error.message.includes('required') ||
+                    error.message.includes('Invalid') ||
+                    error.message.includes('must be'))
+            ) {
+                ResponseHelper.badRequest(res, error.message)
             } else {
-                ResponseHelper.error(res, error);
+                ResponseHelper.error(res, error)
             }
         }
-    };
+    }
 
     /**
      * PUT /api/profiles/:id
@@ -84,23 +85,24 @@ export class ProfileController {
      */
     update = (req: Request, res: Response): void => {
         try {
-            const { id } = req.params;
-            const input: Partial<SearchProfileInput> = req.body;
-            const profile = this.profileService.update(id, input);
-            ResponseHelper.success(res, { profile });
+            const {id} = req.params
+            const input: Partial<SearchProfileInput> = req.body
+            const profile = this.profileService.update(id, input)
+            ResponseHelper.success(res, {profile})
         } catch (error) {
             // Validation errors should return 400
-            if (error instanceof Error && (
-                error.message.includes('required') ||
-                error.message.includes('Invalid') ||
-                error.message.includes('must be')
-            )) {
-                ResponseHelper.badRequest(res, error.message);
+            if (
+                error instanceof Error &&
+                (error.message.includes('required') ||
+                    error.message.includes('Invalid') ||
+                    error.message.includes('must be'))
+            ) {
+                ResponseHelper.badRequest(res, error.message)
             } else {
-                ResponseHelper.error(res, error);
+                ResponseHelper.error(res, error)
             }
         }
-    };
+    }
 
     /**
      * PATCH /api/profiles/:id/toggle
@@ -108,13 +110,13 @@ export class ProfileController {
      */
     toggleActive = (req: Request, res: Response): void => {
         try {
-            const { id } = req.params;
-            const profile = this.profileService.toggleActive(id);
-            ResponseHelper.success(res, { profile });
+            const {id} = req.params
+            const profile = this.profileService.toggleActive(id)
+            ResponseHelper.success(res, {profile})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * DELETE /api/profiles/:id
@@ -122,11 +124,11 @@ export class ProfileController {
      */
     delete = (req: Request, res: Response): void => {
         try {
-            const { id } = req.params;
-            this.profileService.delete(id);
-            ResponseHelper.success(res, { message: 'Profile deleted successfully' });
+            const {id} = req.params
+            this.profileService.delete(id)
+            ResponseHelper.success(res, {message: 'Profile deleted successfully'})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 }

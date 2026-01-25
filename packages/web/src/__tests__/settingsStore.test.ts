@@ -2,59 +2,59 @@
  * Settings store tests
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useSettingsStore } from '../stores/settingsStore'
+import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {useSettingsStore} from '../stores/settingsStore'
 import * as api from '../api/client'
 
 vi.mock('../api/client', () => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  patch: vi.fn(),
-  del: vi.fn(),
-  put: vi.fn(),
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    del: vi.fn(),
+    put: vi.fn(),
 }))
 
 const initialState = {
-  cvContent: '',
-  hasCV: false,
-  loading: false,
-  error: null,
+    cvContent: '',
+    hasCV: false,
+    loading: false,
+    error: null,
 }
 
 describe('useSettingsStore', () => {
-  beforeEach(() => {
-    useSettingsStore.setState(initialState)
-    vi.clearAllMocks()
-  })
-
-  it('fetchCV should set content and hasCV', async () => {
-    vi.mocked(api.get).mockResolvedValue({
-      cv_content: 'My CV',
-      has_cv: true,
+    beforeEach(() => {
+        useSettingsStore.setState(initialState)
+        vi.clearAllMocks()
     })
 
-    await useSettingsStore.getState().fetchCV()
+    it('fetchCV should set content and hasCV', async () => {
+        vi.mocked(api.get).mockResolvedValue({
+            cv_content: 'My CV',
+            has_cv: true,
+        })
 
-    expect(useSettingsStore.getState().cvContent).toBe('My CV')
-    expect(useSettingsStore.getState().hasCV).toBe(true)
-  })
+        await useSettingsStore.getState().fetchCV()
 
-  it('saveCV should update local state', async () => {
-    vi.mocked(api.post).mockResolvedValue({})
+        expect(useSettingsStore.getState().cvContent).toBe('My CV')
+        expect(useSettingsStore.getState().hasCV).toBe(true)
+    })
 
-    await useSettingsStore.getState().saveCV('New CV')
+    it('saveCV should update local state', async () => {
+        vi.mocked(api.post).mockResolvedValue({})
 
-    expect(useSettingsStore.getState().cvContent).toBe('New CV')
-    expect(useSettingsStore.getState().hasCV).toBe(true)
-  })
+        await useSettingsStore.getState().saveCV('New CV')
 
-  it('deleteCV should clear local state', async () => {
-    useSettingsStore.setState({ cvContent: 'Old CV', hasCV: true })
-    vi.mocked(api.del).mockResolvedValue({})
+        expect(useSettingsStore.getState().cvContent).toBe('New CV')
+        expect(useSettingsStore.getState().hasCV).toBe(true)
+    })
 
-    await useSettingsStore.getState().deleteCV()
+    it('deleteCV should clear local state', async () => {
+        useSettingsStore.setState({cvContent: 'Old CV', hasCV: true})
+        vi.mocked(api.del).mockResolvedValue({})
 
-    expect(useSettingsStore.getState().cvContent).toBe('')
-    expect(useSettingsStore.getState().hasCV).toBe(false)
-  })
+        await useSettingsStore.getState().deleteCV()
+
+        expect(useSettingsStore.getState().cvContent).toBe('')
+        expect(useSettingsStore.getState().hasCV).toBe(false)
+    })
 })

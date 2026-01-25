@@ -5,6 +5,7 @@
 YShvydak Job Screener follows a **Simplified Layered Architecture** pattern with clear separation of concerns across all components.
 
 The system is designed to:
+
 - Automate job search using SerpAPI
 - Analyze job matches using Google Gemini AI
 - Track application status
@@ -27,6 +28,7 @@ yshvydak-job-screener/
 ```
 
 **Why Simplified?**
+
 - No separate `core` package (types in `shared/`)
 - No `reporter` package (not applicable)
 - Easier to maintain
@@ -145,72 +147,83 @@ export class JobRepository {
 ### Service Layer
 
 #### SearchService
+
 - **Purpose:** SerpAPI integration and job search orchestration
 - **Key Methods:**
-  - `runSearch()` - Main search workflow
-  - `fetchFromSerpAPI()` - Call SerpAPI with profile params
-  - `saveJobs()` - Save jobs preventing duplicates
+    - `runSearch()` - Main search workflow
+    - `fetchFromSerpAPI()` - Call SerpAPI with profile params
+    - `saveJobs()` - Save jobs preventing duplicates
 
 #### AIService
+
 - **Purpose:** Google Gemini AI integration for job matching analysis
 - **Key Methods:**
-  - `analyzeJobs()` - Batch analyze jobs
-  - `analyzeJob()` - Single job analysis with CV
-  - `buildPrompt()` - Build Gemini prompt
-  - `parseAIResponse()` - Parse Gemini JSON response
+    - `analyzeJobs()` - Batch analyze jobs
+    - `analyzeJob()` - Single job analysis with CV
+    - `buildPrompt()` - Build Gemini prompt
+    - `parseAIResponse()` - Parse Gemini JSON response
 
 #### JobService
+
 - **Purpose:** Job management and status tracking
 - **Key Methods:**
-  - `getJobs()` - Get jobs with filters
-  - `getJobById()` - Get job with AI analysis
-  - `updateJobStatus()` - Update job status
+    - `getJobs()` - Get jobs with filters
+    - `getJobById()` - Get job with AI analysis
+    - `updateJobStatus()` - Update job status
 
 #### ProfileService
+
 - **Purpose:** Search profile management
 - **Key Methods:**
-  - `getProfiles()` - Get all profiles
-  - `createProfile()` - Create new profile
-  - `updateProfile()` - Update profile
-  - `toggleProfileActive()` - Toggle active/inactive
+    - `getProfiles()` - Get all profiles
+    - `createProfile()` - Create new profile
+    - `updateProfile()` - Update profile
+    - `toggleProfileActive()` - Toggle active/inactive
 
 #### CVService
+
 - **Purpose:** CV parsing and storage
 - **Key Methods:**
-  - `uploadCV()` - Upload and parse CV
-  - `getCV()` - Get CV content
-  - `parseCV()` - Parse CV from file
+    - `uploadCV()` - Upload and parse CV
+    - `getCV()` - Get CV content
+    - `parseCV()` - Parse CV from file
 
 ### Repository Layer
 
 #### JobRepository
+
 - **Purpose:** Job CRUD operations
 - **Key Methods:**
-  - `findBySerpAPIId()` - ⚠️ CRITICAL: Check for duplicates
-  - `findByFilters()` - Filter jobs by status/score/profile
-  - `create()` - Insert new job
-  - `updateStatus()` - Update job status
+    - `findBySerpAPIId()` - ⚠️ CRITICAL: Check for duplicates
+    - `findByFilters()` - Filter jobs by status/score/profile
+    - `create()` - Insert new job
+    - `updateStatus()` - Update job status
 
 #### ProfileRepository
+
 - **Purpose:** Profile CRUD operations
 - **Methods:** Standard CRUD + `toggleActive()`
 
 #### AIAnalysisRepository
+
 - **Purpose:** AI analysis CRUD operations
 - **Methods:** `findByJobId()`, `create()`, `update()`
 
 #### SettingsRepository
+
 - **Purpose:** Settings CRUD operations (key-value store)
 - **Methods:** `get()`, `set()`, `getAll()`
 
 ### External API Clients
 
 #### SerpAPI Client
+
 - **Purpose:** Google Jobs search API integration
 - **Configuration:** `google_jobs` engine
 - **Response:** Array of job results
 
 #### Gemini AI Client
+
 - **Purpose:** Google Gemini AI integration
 - **Model:** `gemini-pro`
 - **Response:** JSON analysis (match score, strengths, gaps, reasoning)
@@ -307,22 +320,22 @@ CREATE INDEX idx_ai_analyses_match_score ON ai_analyses(match_score);
 ### Key Database Decisions
 
 1. **Job Deduplication:** UNIQUE constraint on `serpapi_job_id`
-   - Prevents duplicate jobs in database
-   - Application also checks before insert
-   - Database constraint as safety net
+    - Prevents duplicate jobs in database
+    - Application also checks before insert
+    - Database constraint as safety net
 
 2. **One Analysis Per Job:** UNIQUE constraint on `job_id` in ai_analyses
-   - Only one AI analysis per job
-   - Can be updated if job is re-analyzed
+    - Only one AI analysis per job
+    - Can be updated if job is re-analyzed
 
 3. **Settings as Key-Value Store:**
-   - Flexible configuration storage
-   - CV content stored as text
-   - Easy to extend
+    - Flexible configuration storage
+    - CV content stored as text
+    - Easy to extend
 
 4. **Status Tracking:**
-   - Simple enum: `new`, `applied`, `saved`, `rejected`
-   - Updated via PATCH `/api/jobs/:id/status`
+    - Simple enum: `new`, `applied`, `saved`, `rejected`
+    - Updated via PATCH `/api/jobs/:id/status`
 
 ---
 
@@ -375,6 +388,7 @@ GET    /api/settings/cv               # Download CV
 ### API Response Format
 
 **Success:**
+
 ```json
 {
     "success": true,
@@ -383,6 +397,7 @@ GET    /api/settings/cv               # Download CV
 ```
 
 **Error:**
+
 ```json
 {
     "success": false,
@@ -419,38 +434,45 @@ packages/web/src/
 ### Key Principles
 
 #### 1. Pages-Based Organization
+
 - **One page = one route** - Simple mapping
 - **Self-contained** - Each page handles its own logic
 - **Components extracted** - Large pages split into components within same file or separate
 
 #### 2. Zustand Store Organization
+
 - **Domain-level stores:** One store per domain (jobs, profiles, settings)
 - **API calls in stores:** Centralized data fetching
 - **Simple actions:** Direct state updates
 
 #### 3. Component Size Best Practice
+
 - **Maximum 200 lines per file** - Extract if larger
 - **Inline components OK** - For page-specific UI (ProfileForm, JobCard, etc.)
 
 ### Pages Breakdown
 
 #### Jobs Page
+
 - Job listings with status filters
 - Job detail modal
 - Status update actions
 - AI analysis display
 
 #### Profiles Page
+
 - Profile list with CRUD
 - Inline ProfileForm component
 - Run search action
 - Location is optional (global search)
 
 #### Dashboard Page
+
 - Statistics cards
 - Recent jobs overview
 
 #### Settings Page
+
 - CV content textarea
 - Save settings
 
@@ -459,6 +481,7 @@ packages/web/src/
 ## Technology Stack
 
 ### Frontend
+
 - React 18 + TypeScript
 - Vite 6 for development
 - Tailwind CSS for styling
@@ -466,16 +489,19 @@ packages/web/src/
 - **Architecture:** Feature-Based + Atomic Design
 
 ### Backend (Layered Architecture)
+
 - Express.js + TypeScript
 - SQLite 3 for persistence
 - Dependency Injection for service management
 - Layered architecture (Controller → Service → Repository)
 
 ### External APIs
+
 - **SerpAPI:** Google Jobs search
 - **Google Gemini AI:** Job matching analysis
 
 ### Development
+
 - Turborepo for monorepo management
 - TypeScript 5 across all packages
 - ESLint for code quality
@@ -487,17 +513,20 @@ packages/web/src/
 ## Security Considerations
 
 ### API Keys
+
 - ❌ NEVER hardcode API keys
 - ✅ ALWAYS use environment variables
 - ✅ Keys in `.env` (gitignored)
 - ✅ `.env.example` for documentation
 
 ### SQL Injection Prevention
+
 - ✅ ALWAYS use parameterized queries
 - ✅ NEVER concatenate user input into SQL
 - Example: `db.run("SELECT * FROM jobs WHERE id = ?", [id])`
 
 ### Input Validation
+
 - ✅ Validate all user inputs
 - ✅ Sanitize before database insert
 - ✅ Type checking with TypeScript
@@ -507,17 +536,20 @@ packages/web/src/
 ## Performance Considerations
 
 ### Database
+
 - ✅ Indexes on frequently queried columns
 - ✅ Efficient SQL queries
 - ✅ Connection pooling (if needed)
 
 ### Frontend
+
 - ✅ Code splitting (Vite)
 - ✅ Lazy loading routes
 - ✅ Memoization where needed
 - ✅ Efficient re-renders (Zustand)
 
 ### External APIs
+
 - ✅ Error handling and retries
 - ✅ Rate limiting awareness
 - ✅ Caching where appropriate
@@ -557,6 +589,7 @@ packages/web/src/
 ```
 
 **Production Setup:**
+
 - PM2 for process management
 - Nginx as reverse proxy (optional)
 - Systemd service for auto-start

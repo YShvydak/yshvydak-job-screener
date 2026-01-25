@@ -14,7 +14,9 @@ Perform comprehensive documentation audit to ensure optimal Claude Code CLI expe
 ## Audit Checklist
 
 ### 1. Token Budget Analysis
+
 Check each documentation file:
+
 - `CLAUDE.md` - Target: <300 lines, <2500 tokens
 - `docs/ai/*.md` - Target: <200 lines each
 - Total docs/ai/ - Target: <1500 lines total
@@ -24,6 +26,7 @@ Check each documentation file:
 ### 2. Code-Documentation Alignment
 
 **Check FILE_LOCATIONS.md against actual structure:**
+
 ```
 Compare documented paths with:
 - packages/server/src/**/*.ts
@@ -32,6 +35,7 @@ Compare documented paths with:
 ```
 
 **Check CONCEPT_MAP.md flows against actual code:**
+
 - SerpAPI parameters in search.service.ts
 - Gemini integration in ai.service.ts
 - Repository methods match documented patterns
@@ -39,6 +43,7 @@ Compare documented paths with:
 ### 3. Outdated References Detection
 
 Search for potentially outdated references:
+
 - `features/` folder references (we use `pages/`)
 - Wrong port numbers (should be 3000, 3001)
 - `NOT NULL` for location (now optional)
@@ -47,6 +52,7 @@ Search for potentially outdated references:
 ### 4. Missing Documentation
 
 Check if documented:
+
 - All API endpoints in API_REFERENCE.md
 - All environment variables in CONFIGURATION.md
 - Recent architectural decisions in DECISIONS.md
@@ -54,6 +60,7 @@ Check if documented:
 ### 5. Vibe Coding Readiness
 
 Verify new chat can quickly understand:
+
 - [ ] CLAUDE.md has critical context in first 50 lines
 - [ ] Anti-patterns are specific with code examples
 - [ ] File locations match actual structure
@@ -67,27 +74,33 @@ Generate report:
 # Documentation Audit Report
 
 ## Summary
+
 - Total lines: X
 - Estimated tokens: X
 - Status: ✅ Good / ⚠️ Needs attention / ❌ Critical issues
 
 ## Token Budget
-| File | Lines | Tokens | Status |
-|------|-------|--------|--------|
-| CLAUDE.md | X | X | ✅/⚠️/❌ |
-| ... | ... | ... | ... |
+
+| File      | Lines | Tokens | Status   |
+| --------- | ----- | ------ | -------- |
+| CLAUDE.md | X     | X      | ✅/⚠️/❌ |
+| ...       | ...   | ...    | ...      |
 
 ## Alignment Issues
+
 - [ ] Issue 1: description
 - [ ] Issue 2: description
 
 ## Outdated References
+
 - File:Line - "outdated text" → should be "correct text"
 
 ## Missing Documentation
+
 - Missing: X
 
 ## Recommendations
+
 1. Priority 1: ...
 2. Priority 2: ...
 

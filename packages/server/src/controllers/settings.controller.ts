@@ -1,14 +1,14 @@
-import { Request, Response } from 'express';
-import { SettingsRepository } from '../repositories/settings.repository';
-import { ResponseHelper } from '../utils/ResponseHelper';
-import { Logger } from '../utils/Logger';
-import { env } from '../config/environment.config';
+import {Request, Response} from 'express'
+import {SettingsRepository} from '../repositories/settings.repository'
+import {ResponseHelper} from '../utils/ResponseHelper'
+import {Logger} from '../utils/Logger'
+import {env} from '../config/environment.config'
 
 /**
  * Controller for /api/settings endpoints
  */
 export class SettingsController {
-    constructor(private settingsRepository: SettingsRepository) { }
+    constructor(private settingsRepository: SettingsRepository) {}
 
     /**
      * GET /api/settings
@@ -16,12 +16,12 @@ export class SettingsController {
      */
     getAll = (_req: Request, res: Response): void => {
         try {
-            const settings = this.settingsRepository.getAll();
-            ResponseHelper.success(res, { settings });
+            const settings = this.settingsRepository.getAll()
+            ResponseHelper.success(res, {settings})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/settings/cv
@@ -29,15 +29,15 @@ export class SettingsController {
      */
     getCV = (_req: Request, res: Response): void => {
         try {
-            const cv = this.settingsRepository.getCV();
+            const cv = this.settingsRepository.getCV()
             ResponseHelper.success(res, {
                 cv_content: cv,
-                has_cv: cv.length > 0
-            });
+                has_cv: cv.length > 0,
+            })
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * POST /api/settings/cv
@@ -45,24 +45,24 @@ export class SettingsController {
      */
     setCV = (req: Request, res: Response): void => {
         try {
-            const { content } = req.body;
+            const {content} = req.body
 
             if (!content || typeof content !== 'string') {
-                ResponseHelper.badRequest(res, 'CV content is required');
-                return;
+                ResponseHelper.badRequest(res, 'CV content is required')
+                return
             }
 
-            this.settingsRepository.setCV(content);
-            Logger.success('CV updated', { length: content.length });
+            this.settingsRepository.setCV(content)
+            Logger.success('CV updated', {length: content.length})
 
             ResponseHelper.success(res, {
                 message: 'CV updated successfully',
-                length: content.length
-            });
+                length: content.length,
+            })
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * DELETE /api/settings/cv
@@ -70,13 +70,13 @@ export class SettingsController {
      */
     deleteCV = (_req: Request, res: Response): void => {
         try {
-            this.settingsRepository.setCV('');
-            Logger.info('CV deleted');
-            ResponseHelper.success(res, { message: 'CV deleted successfully' });
+            this.settingsRepository.setCV('')
+            Logger.info('CV deleted')
+            ResponseHelper.success(res, {message: 'CV deleted successfully'})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/settings/ai-method
@@ -84,12 +84,12 @@ export class SettingsController {
      */
     getAIMethod = (_req: Request, res: Response): void => {
         try {
-            const method = this.settingsRepository.getAIAnalysisMethod();
-            ResponseHelper.success(res, { method });
+            const method = this.settingsRepository.getAIAnalysisMethod()
+            ResponseHelper.success(res, {method})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * PUT /api/settings/ai-method
@@ -97,24 +97,24 @@ export class SettingsController {
      */
     setAIMethod = (req: Request, res: Response): void => {
         try {
-            const { method } = req.body;
+            const {method} = req.body
 
             if (method !== 'api' && method !== 'local') {
-                ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
-                return;
+                ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.")
+                return
             }
 
-            this.settingsRepository.setAIAnalysisMethod(method);
-            Logger.success('AI analysis method updated', { method });
+            this.settingsRepository.setAIAnalysisMethod(method)
+            Logger.success('AI analysis method updated', {method})
 
             ResponseHelper.success(res, {
                 message: 'AI analysis method updated successfully',
-                method
-            });
+                method,
+            })
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/settings/api-status
@@ -126,18 +126,18 @@ export class SettingsController {
                 serpapi: {
                     configured: !!env.SERPAPI_KEY && env.SERPAPI_KEY.length > 0,
                     name: 'SerpAPI',
-                    description: 'Job search API'
+                    description: 'Job search API',
                 },
                 gemini: {
                     configured: !!env.GEMINI_API_KEY && env.GEMINI_API_KEY.length > 0,
                     name: 'Google Gemini',
-                    description: 'AI job analysis'
-                }
-            };
+                    description: 'AI job analysis',
+                },
+            }
 
-            ResponseHelper.success(res, { status });
+            ResponseHelper.success(res, {status})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 }

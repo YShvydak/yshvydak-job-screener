@@ -62,12 +62,12 @@ VITE_API_BASE_URL=http://localhost:3001/api
 **Get API Keys:**
 
 1. **SerpAPI:** [https://serpapi.com/users/sign_up](https://serpapi.com/users/sign_up)
-   - Free tier: 100 searches/month
-   - Copy your API key
+    - Free tier: 100 searches/month
+    - Copy your API key
 
 2. **Google Gemini AI:** [https://ai.google.dev/](https://ai.google.dev/)
-   - Free tier available
-   - Create API key in Google AI Studio
+    - Free tier available
+    - Create API key in Google AI Studio
 
 ### Step 4: Start Development Server
 
@@ -76,6 +76,7 @@ npm run dev
 ```
 
 This will start:
+
 - **Backend API** on `http://localhost:3001`
 - **Frontend UI** on `http://localhost:3000`
 
@@ -105,11 +106,11 @@ You should see the Job Screener dashboard!
 1. Go to **Profiles** page
 2. Click **Create New Profile**
 3. Fill in search criteria:
-   - **Name:** e.g., "QA Automation Worldwide" (required)
-   - **Keywords:** e.g., "QA Automation Engineer, SDET" (required)
-   - **Location:** e.g., "Tel Aviv, Israel" (optional - leave empty for global search)
-   - **Date Posted:** e.g., "Last 7 days" (optional)
-   - **Radius:** e.g., "50 km" (optional, only with location)
+    - **Name:** e.g., "QA Automation Worldwide" (required)
+    - **Keywords:** e.g., "QA Automation Engineer, SDET" (required)
+    - **Location:** e.g., "Tel Aviv, Israel" (optional - leave empty for global search)
+    - **Date Posted:** e.g., "Last 7 days" (optional)
+    - **Radius:** e.g., "50 km" (optional, only with location)
 4. Click **Create**
 
 > **Tip:** Leave location empty to search for jobs worldwide!
@@ -126,15 +127,15 @@ You should see the Job Screener dashboard!
 
 1. Go to **Jobs** page
 2. See job listings with:
-   - Match score (if AI analysis was used)
-   - Job title, company, location
-   - Status badge
+    - Match score (if AI analysis was used)
+    - Job title, company, location
+    - Status badge
 3. Click on a job to see details
 4. Take action:
-   - **Apply Now** → Opens job link
-   - **Mark as Applied** → Track application
-   - **Save for Later** → Save to review later
-   - **Reject** → Hide from main list
+    - **Apply Now** → Opens job link
+    - **Mark as Applied** → Track application
+    - **Save for Later** → Save to review later
+    - **Reject** → Hide from main list
 
 ---
 
@@ -152,6 +153,7 @@ npm run dev
 ### "SerpAPI quota exceeded"
 
 **Solution:** Free tier has 100 searches/month. Options:
+
 1. Wait for next month
 2. Upgrade SerpAPI plan
 3. Use fewer search profiles
@@ -159,6 +161,7 @@ npm run dev
 ### "Gemini AI error"
 
 **Solution:** Check your API key:
+
 1. Verify `GEMINI_API_KEY` in `.env`
 2. Check [Google AI Studio](https://ai.google.dev/) for API key status
 3. Ensure API is enabled

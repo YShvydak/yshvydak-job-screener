@@ -59,50 +59,57 @@ packages/web/src/__tests__/
 ## Key Patterns
 
 ### Unit Test (Repository)
+
 ```typescript
 import Database from 'better-sqlite3'
-import { JobRepository } from '../../../repositories/job.repository'
+import {JobRepository} from '../../../repositories/job.repository'
 
 let db: Database.Database
 let repository: JobRepository
 
 beforeEach(() => {
-  db = new Database(':memory:')
-  db.exec(schema)  // Load schema.sql
-  repository = new JobRepository(db)
+    db = new Database(':memory:')
+    db.exec(schema) // Load schema.sql
+    repository = new JobRepository(db)
 })
 
 afterEach(() => db.close())
 ```
 
 ### Unit Test (Service with Mocks)
-```typescript
-vi.mock('serpapi', () => ({ getJson: vi.fn() }))
 
-const { getJson } = await import('serpapi')
+```typescript
+vi.mock('serpapi', () => ({getJson: vi.fn()}))
+
+const {getJson} = await import('serpapi')
 vi.mocked(getJson).mockResolvedValue(fixtures.serpApiResponse)
 ```
 
 ### Integration Test (HTTP)
+
 ```typescript
 import request from 'supertest'
-import { setupTestServer, teardownTestServer } from '../helpers/testServer'
+import {setupTestServer, teardownTestServer} from '../helpers/testServer'
 
 let server: TestServerInstance
 
-beforeAll(async () => { server = await setupTestServer() })
-afterAll(async () => { await teardownTestServer(server) })
-beforeEach(() => { cleanTestDatabase(server) })
+beforeAll(async () => {
+    server = await setupTestServer()
+})
+afterAll(async () => {
+    await teardownTestServer(server)
+})
+beforeEach(() => {
+    cleanTestDatabase(server)
+})
 
 it('should return jobs', async () => {
-  seedProfile(server.db)
-  seedJob(server.db)
+    seedProfile(server.db)
+    seedJob(server.db)
 
-  const response = await request(server.app)
-    .get('/api/jobs')
-    .expect(200)
+    const response = await request(server.app).get('/api/jobs').expect(200)
 
-  expect(response.body.data.jobs).toHaveLength(1)
+    expect(response.body.data.jobs).toHaveLength(1)
 })
 ```
 
@@ -111,15 +118,17 @@ it('should return jobs', async () => {
 ## Helpers Reference
 
 ### fixtures.ts
+
 ```typescript
-fixtures.profile      // { id, name, keywords, location, ... }
-fixtures.job          // { id, serpapi_job_id, title, company, ... }
-fixtures.analysis     // { id, job_id, match_score, recommendation, ... }
-fixtures.serpApiResponse      // { jobs_results: [...] }
+fixtures.profile // { id, name, keywords, location, ... }
+fixtures.job // { id, serpapi_job_id, title, company, ... }
+fixtures.analysis // { id, job_id, match_score, recommendation, ... }
+fixtures.serpApiResponse // { jobs_results: [...] }
 fixtures.serpApiEmptyResponse // { jobs_results: [] }
 ```
 
 ### database.ts
+
 ```typescript
 seedProfile(db, overrides?)   // Insert profile
 seedJob(db, overrides?)       // Insert job (requires profile)
@@ -127,10 +136,11 @@ seedAnalysis(db, overrides?)  // Insert analysis (requires job)
 ```
 
 ### testServer.ts
+
 ```typescript
-setupTestServer()      // Returns { app, db, dbPath }
-teardownTestServer()   // Closes DB, removes temp files
-cleanTestDatabase()    // Clears all tables
+setupTestServer() // Returns { app, db, dbPath }
+teardownTestServer() // Closes DB, removes temp files
+cleanTestDatabase() // Clears all tables
 ```
 
 ---
@@ -151,6 +161,7 @@ cleanTestDatabase()    // Clears all tables
 4. **Store test** → `packages/web/src/__tests__/{storeName}.test.ts`
 
 **Rules:**
+
 - Use fixtures from `helpers/fixtures.ts`
 - Mock external APIs (SerpAPI, Gemini)
 - Clean database in `beforeEach`
