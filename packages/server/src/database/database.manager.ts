@@ -1,47 +1,47 @@
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
+import Database from 'better-sqlite3'
+import fs from 'fs'
+import path from 'path'
 
 /**
  * DatabaseManager - Wrapper around better-sqlite3
  * Provides a simplified interface for database operations
  */
 export class DatabaseManager {
-    private db: Database.Database;
+    private db: Database.Database
 
     constructor(dbPath: string) {
         // Ensure database directory exists
-        const dbDir = path.dirname(dbPath);
+        const dbDir = path.dirname(dbPath)
         if (!fs.existsSync(dbDir)) {
-            fs.mkdirSync(dbDir, { recursive: true });
+            fs.mkdirSync(dbDir, {recursive: true})
         }
 
         // Initialize database connection
         this.db = new Database(dbPath, {
-            verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
-        });
+            verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
+        })
 
         // Enable foreign keys
-        this.db.pragma('foreign_keys = ON');
+        this.db.pragma('foreign_keys = ON')
 
         // Enable WAL mode for better concurrency
-        this.db.pragma('journal_mode = WAL');
+        this.db.pragma('journal_mode = WAL')
 
         // Initialize schema
-        this.initSchema();
+        this.initSchema()
     }
 
     /**
      * Initialize database schema from SQL file
      */
     private initSchema(): void {
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        const schema = fs.readFileSync(schemaPath, 'utf8');
+        const schemaPath = path.join(__dirname, 'schema.sql')
+        const schema = fs.readFileSync(schemaPath, 'utf8')
 
         // Execute schema (better-sqlite3 supports multiple statements)
-        this.db.exec(schema);
+        this.db.exec(schema)
 
-        console.log('✅ Database schema initialized');
+        console.log('✅ Database schema initialized')
     }
 
     /**
@@ -49,8 +49,8 @@ export class DatabaseManager {
      * Returns the result with lastInsertRowid and changes
      */
     run(sql: string, params: any[] = []): Database.RunResult {
-        const stmt = this.db.prepare(sql);
-        return stmt.run(params);
+        const stmt = this.db.prepare(sql)
+        return stmt.run(params)
     }
 
     /**
@@ -58,8 +58,8 @@ export class DatabaseManager {
      * Returns undefined if no row found
      */
     get<T = any>(sql: string, params: any[] = []): T | undefined {
-        const stmt = this.db.prepare(sql);
-        return stmt.get(params) as T | undefined;
+        const stmt = this.db.prepare(sql)
+        return stmt.get(params) as T | undefined
     }
 
     /**
@@ -67,8 +67,8 @@ export class DatabaseManager {
      * Returns empty array if no rows found
      */
     all<T = any>(sql: string, params: any[] = []): T[] {
-        const stmt = this.db.prepare(sql);
-        return stmt.all(params) as T[];
+        const stmt = this.db.prepare(sql)
+        return stmt.all(params) as T[]
     }
 
     /**
@@ -76,16 +76,16 @@ export class DatabaseManager {
      * Commits on success, rolls back on error
      */
     transaction<T>(fn: () => T): T {
-        const txn = this.db.transaction(fn);
-        return txn();
+        const txn = this.db.transaction(fn)
+        return txn()
     }
 
     /**
      * Close the database connection
      */
     close(): void {
-        this.db.close();
-        console.log('✅ Database connection closed');
+        this.db.close()
+        console.log('✅ Database connection closed')
     }
 
     /**
@@ -93,6 +93,6 @@ export class DatabaseManager {
      * Use this for advanced operations
      */
     getDB(): Database.Database {
-        return this.db;
+        return this.db
     }
 }

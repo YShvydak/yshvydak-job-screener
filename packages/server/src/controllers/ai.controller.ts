@@ -1,7 +1,7 @@
-import { Request, Response } from 'express';
-import { AIAnalysisMethod } from '@yshvydak-job-screener/shared';
-import { AIService } from '../services/ai.service';
-import { ResponseHelper } from '../utils/ResponseHelper';
+import {Request, Response} from 'express'
+import {AIAnalysisMethod} from '@yshvydak-job-screener/shared'
+import {AIService} from '../services/ai.service'
+import {ResponseHelper} from '../utils/ResponseHelper'
 
 /**
  * Controller for /api/ai endpoints
@@ -19,32 +19,35 @@ export class AIController {
      */
     analyzeJob = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { jobId } = req.params;
-            const methodParam = req.query.method as string | undefined;
+            const {jobId} = req.params
+            const methodParam = req.query.method as string | undefined
 
             // Validate method parameter if provided
-            let method: AIAnalysisMethod | undefined;
+            let method: AIAnalysisMethod | undefined
             if (methodParam) {
                 if (methodParam !== 'api' && methodParam !== 'local') {
-                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
-                    return;
+                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.")
+                    return
                 }
-                method = methodParam;
+                method = methodParam
             }
 
-            const cvContent = this.getCV();
+            const cvContent = this.getCV()
 
             if (!cvContent) {
-                ResponseHelper.badRequest(res, 'CV content is not configured. Please upload your CV in settings.');
-                return;
+                ResponseHelper.badRequest(
+                    res,
+                    'CV content is not configured. Please upload your CV in settings.'
+                )
+                return
             }
 
-            const analysis = await this.aiService.analyzeJob(jobId, cvContent, method);
-            ResponseHelper.success(res, { analysis });
+            const analysis = await this.aiService.analyzeJob(jobId, cvContent, method)
+            ResponseHelper.success(res, {analysis})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * POST /api/ai/analyze-batch
@@ -53,41 +56,44 @@ export class AIController {
      */
     analyzeBatch = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { jobIds } = req.body;
-            const methodParam = req.query.method as string | undefined;
+            const {jobIds} = req.body
+            const methodParam = req.query.method as string | undefined
 
             // Validate method parameter if provided
-            let method: AIAnalysisMethod | undefined;
+            let method: AIAnalysisMethod | undefined
             if (methodParam) {
                 if (methodParam !== 'api' && methodParam !== 'local') {
-                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.");
-                    return;
+                    ResponseHelper.badRequest(res, "Invalid method. Must be 'api' or 'local'.")
+                    return
                 }
-                method = methodParam;
+                method = methodParam
             }
 
             if (!Array.isArray(jobIds) || jobIds.length === 0) {
-                ResponseHelper.badRequest(res, 'jobIds array is required');
-                return;
+                ResponseHelper.badRequest(res, 'jobIds array is required')
+                return
             }
 
-            const cvContent = this.getCV();
+            const cvContent = this.getCV()
 
             if (!cvContent) {
-                ResponseHelper.badRequest(res, 'CV content is not configured. Please upload your CV in settings.');
-                return;
+                ResponseHelper.badRequest(
+                    res,
+                    'CV content is not configured. Please upload your CV in settings.'
+                )
+                return
             }
 
-            const analyses = await this.aiService.analyzeJobs(jobIds, cvContent, method);
+            const analyses = await this.aiService.analyzeJobs(jobIds, cvContent, method)
             ResponseHelper.success(res, {
                 total: jobIds.length,
                 analyzed: analyses.length,
-                analyses
-            });
+                analyses,
+            })
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/ai/analysis/:jobId
@@ -95,19 +101,19 @@ export class AIController {
      */
     getAnalysis = (req: Request, res: Response): void => {
         try {
-            const { jobId } = req.params;
-            const analysis = this.aiService.getAnalysis(jobId);
+            const {jobId} = req.params
+            const analysis = this.aiService.getAnalysis(jobId)
 
             if (!analysis) {
-                ResponseHelper.notFound(res, 'Analysis not found');
-                return;
+                ResponseHelper.notFound(res, 'Analysis not found')
+                return
             }
 
-            ResponseHelper.success(res, { analysis });
+            ResponseHelper.success(res, {analysis})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 
     /**
      * GET /api/ai/stats
@@ -115,10 +121,10 @@ export class AIController {
      */
     getStats = (_req: Request, res: Response): void => {
         try {
-            const stats = this.aiService.getStats();
-            ResponseHelper.success(res, { stats });
+            const stats = this.aiService.getStats()
+            ResponseHelper.success(res, {stats})
         } catch (error) {
-            ResponseHelper.error(res, error);
+            ResponseHelper.error(res, error)
         }
-    };
+    }
 }

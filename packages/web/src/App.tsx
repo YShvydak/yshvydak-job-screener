@@ -1,9 +1,9 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { Jobs } from './pages/Jobs';
-import { Profiles } from './pages/Profiles';
-import { Settings } from './pages/Settings';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom'
+import {Layout} from './components/Layout'
+import {Dashboard} from './pages/Dashboard'
+import {Jobs} from './pages/Jobs'
+import {Profiles} from './pages/Profiles'
+import {Settings} from './pages/Settings'
 
 const router = createBrowserRouter([
     {
@@ -12,24 +12,24 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Dashboard />
+                element: <Dashboard />,
             },
             {
                 path: 'jobs',
-                element: <Jobs />
+                element: <Jobs />,
             },
             {
                 path: 'profiles',
-                element: <Profiles />
+                element: <Profiles />,
             },
             {
                 path: 'settings',
-                element: <Settings />
-            }
-        ]
-    }
-]);
+                element: <Settings />,
+            },
+        ],
+    },
+])
 
 export default function App() {
-    return <RouterProvider router={router} />;
+    return <RouterProvider router={router} />
 }

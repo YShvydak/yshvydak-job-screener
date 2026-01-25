@@ -83,6 +83,7 @@ User clicks "Search Now" on profile
 ## Project Structure (Actual)
 
 ### Backend (Layered Architecture)
+
 ```
 packages/server/src/
 ├── index.ts                 # Entry point + Express setup
@@ -114,6 +115,7 @@ packages/server/src/
 ```
 
 ### Frontend (Pages + Stores)
+
 ```
 packages/web/src/
 ├── App.tsx                  # Main app with routing
@@ -134,6 +136,7 @@ packages/web/src/
 ```
 
 ### Shared Types
+
 ```
 shared/src/
 ├── index.ts
@@ -149,11 +152,11 @@ shared/src/
 
 ### Primary Skills
 
-| Task | Skill | Why |
-|------|-------|-----|
-| UI components, pages, styling | `/frontend-design` | High-quality design |
-| Backend features, API, full-stack | `/feature-dev` | Architecture focus |
-| Quick fixes, minor tweaks | — | Direct editing |
+| Task                              | Skill              | Why                 |
+| --------------------------------- | ------------------ | ------------------- |
+| UI components, pages, styling     | `/frontend-design` | High-quality design |
+| Backend features, API, full-stack | `/feature-dev`     | Architecture focus  |
+| Quick fixes, minor tweaks         | —                  | Direct editing      |
 
 ### Essential Commands
 
@@ -184,6 +187,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for URLs, CI/CD details, and troubl
 ## Anti-Patterns (NEVER DO)
 
 ### Bypassing Repository Layer
+
 ```typescript
 // WRONG
 await this.db.query('SELECT * FROM jobs')
@@ -193,6 +197,7 @@ await this.jobRepository.findAll()
 ```
 
 ### Not Preventing Job Duplicates
+
 ```typescript
 // WRONG
 await this.jobRepository.create(jobData)
@@ -205,6 +210,7 @@ if (!existing) {
 ```
 
 ### Hardcoding API Keys
+
 ```typescript
 // WRONG
 const apiKey = 'AIzaSyC...'
@@ -214,53 +220,57 @@ const apiKey = process.env.GEMINI_API_KEY
 ```
 
 ### Requiring Location for Search
+
 ```typescript
 // WRONG - location is now optional
 if (!input.location) {
-    throw new Error('Location is required');
+    throw new Error('Location is required')
 }
 
 // RIGHT - empty location = global search
 if (profile.location && profile.location.trim()) {
-    params.location = profile.location;
+    params.location = profile.location
 }
 ```
 
 ### Missing date_posted Field
+
 ```typescript
 // WRONG - date_posted is required
-service.create({ name: 'Test', keywords: 'react', location: '' })
+service.create({name: 'Test', keywords: 'react', location: ''})
 
 // RIGHT - always provide date_posted
-service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'week' })
+service.create({name: 'Test', keywords: 'react', location: '', date_posted: 'week'})
 ```
 
 ---
 
 ## Quick Fixes
 
-| Issue | Solution |
-|-------|----------|
-| Duplicate jobs | Check `serpapi_job_id` before insert |
-| Missing CV for AI | Upload CV in Settings |
-| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env` |
-| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI |
-| Switch AI method | Settings page or use dropdown on Analyze button |
-| SerpAPI quota exceeded | Check SerpAPI dashboard |
-| 0 results returned | Valid response, try different keywords |
-| Port conflict | Kill process: `lsof -ti:3001 \| xargs kill -9` |
+| Issue                   | Solution                                        |
+| ----------------------- | ----------------------------------------------- |
+| Duplicate jobs          | Check `serpapi_job_id` before insert            |
+| Missing CV for AI       | Upload CV in Settings                           |
+| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env`               |
+| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI           |
+| Switch AI method        | Settings page or use dropdown on Analyze button |
+| SerpAPI quota exceeded  | Check SerpAPI dashboard                         |
+| 0 results returned      | Valid response, try different keywords          |
+| Port conflict           | Kill process: `lsof -ti:3001 \| xargs kill -9`  |
 
 ---
 
 ## Development Rules
 
 ### DO:
+
 - Use Context7-MCP for all dependency lookups
 - Follow Layered Architecture (Controller → Service → Repository)
 - Check `serpapi_job_id` before job insert
 - Use `/frontend-design` for UI, `/feature-dev` for backend
 
 ### DON'T:
+
 - NEVER commit without explicit user request
 - NEVER add dependencies without Context7-MCP check
 - NEVER bypass repository layer
@@ -278,7 +288,7 @@ service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'we
 - [docs/ai/](docs/ai/) - AI-specific documentation
 - [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md) - Architecture decisions
 - [docs/features/](docs/features/) - Feature deep dives
-  - [AI_ANALYSIS.md](docs/features/AI_ANALYSIS.md) - AI job analysis (Cloud API / Local CLI)
+    - [AI_ANALYSIS.md](docs/features/AI_ANALYSIS.md) - AI job analysis (Cloud API / Local CLI)
 
 ---
 

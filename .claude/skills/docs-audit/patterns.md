@@ -5,6 +5,7 @@ Reference file for docs-audit skill. Contains patterns that indicate outdated do
 ## Outdated Patterns
 
 ### Structure References
+
 ```
 # Wrong (Feature-based)
 features/jobs/components/
@@ -24,6 +25,7 @@ stores/settingsStore.ts
 ```
 
 ### Port Numbers
+
 ```
 # Wrong
 localhost:5173
@@ -34,6 +36,7 @@ localhost:3001 (backend)
 ```
 
 ### Location Parameter
+
 ```
 # Wrong
 location TEXT NOT NULL
@@ -47,6 +50,7 @@ Empty location = global search
 ```
 
 ### SerpAPI Parameters
+
 ```
 # Must be documented
 hl: 'en' (English results)
@@ -55,6 +59,7 @@ lrad: radius in miles (only with location)
 ```
 
 ### Non-existent Files
+
 ```
 # These should NOT be referenced
 app.ts
@@ -65,6 +70,7 @@ docs/features/
 ```
 
 ### Correct File References
+
 ```
 # Entry point
 packages/server/src/index.ts
@@ -84,19 +90,20 @@ packages/server/src/repositories/analysis.repository.ts
 
 ## Token Budget Targets
 
-| File | Max Lines | Max Tokens |
-|------|-----------|------------|
-| CLAUDE.md | 300 | 2500 |
-| FILE_LOCATIONS.md | 200 | 1600 |
-| CONCEPT_MAP.md | 300 | 2400 |
-| ANTI_PATTERNS.md | 200 | 1600 |
-| DECISIONS.md | 400 | 3200 |
-| DOCUMENTATION_UPDATE_RULES.md | 150 | 1200 |
-| **Total docs/ai/** | 1250 | 10000 |
+| File                          | Max Lines | Max Tokens |
+| ----------------------------- | --------- | ---------- |
+| CLAUDE.md                     | 300       | 2500       |
+| FILE_LOCATIONS.md             | 200       | 1600       |
+| CONCEPT_MAP.md                | 300       | 2400       |
+| ANTI_PATTERNS.md              | 200       | 1600       |
+| DECISIONS.md                  | 400       | 3200       |
+| DOCUMENTATION_UPDATE_RULES.md | 150       | 1200       |
+| **Total docs/ai/**            | 1250      | 10000      |
 
 ## Vibe Coding Checklist
 
 ### CLAUDE.md First 50 Lines Must Have:
+
 - [ ] Project name and stack
 - [ ] Layered Architecture pattern
 - [ ] Job deduplication rule
@@ -104,12 +111,14 @@ packages/server/src/repositories/analysis.repository.ts
 - [ ] Context7-MCP requirement
 
 ### Quick Start Must Be Possible:
+
 - [ ] `npm run dev` works
 - [ ] Ports documented correctly
 - [ ] API endpoints accessible
 - [ ] Database auto-creates
 
 ### New Session Must Understand:
+
 - [ ] Where to find files
 - [ ] How data flows
 - [ ] What NOT to do (anti-patterns)

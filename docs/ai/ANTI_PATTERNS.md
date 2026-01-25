@@ -97,24 +97,24 @@ async saveJobs(serpResults: SerpAPIResult[], profileId: string) {
 
 ```typescript
 // NEVER do this
-const geminiKey = "AIzaSyC_your_api_key_here";
-const serpApiKey = "abc123_your_serpapi_key";
+const geminiKey = 'AIzaSyC_your_api_key_here'
+const serpApiKey = 'abc123_your_serpapi_key'
 
-const genAI = new GoogleGenerativeAI(geminiKey);
+const genAI = new GoogleGenerativeAI(geminiKey)
 ```
 
 **Right:**
 
 ```typescript
 // ALWAYS use environment variables
-const geminiKey = process.env.GEMINI_API_KEY;
-const serpApiKey = process.env.SERPAPI_KEY;
+const geminiKey = process.env.GEMINI_API_KEY
+const serpApiKey = process.env.SERPAPI_KEY
 
 if (!geminiKey || !serpApiKey) {
-    throw new Error("Missing required API keys in environment");
+    throw new Error('Missing required API keys in environment')
 }
 
-const genAI = new GoogleGenerativeAI(geminiKey);
+const genAI = new GoogleGenerativeAI(geminiKey)
 ```
 
 **Why This Matters:**
@@ -219,16 +219,17 @@ const statusColor = {
     new: 'bg-blue-500',
     applied: 'bg-green-500',
     saved: 'bg-yellow-500',
-    rejected: 'bg-red-500'
-}[status];
+    rejected: 'bg-red-500',
+}[status]
 
 // In JobsList.tsx
-const statusColor = {  // WRONG - Duplicate definition
+const statusColor = {
+    // WRONG - Duplicate definition
     new: 'bg-blue-500',
     applied: 'bg-green-500',
     saved: 'bg-yellow-500',
-    rejected: 'bg-red-500'
-}[status];
+    rejected: 'bg-red-500',
+}[status]
 ```
 
 **Right:**
@@ -239,16 +240,16 @@ export const JOB_STATUS_COLORS = {
     new: 'bg-blue-500',
     applied: 'bg-green-500',
     saved: 'bg-yellow-500',
-    rejected: 'bg-red-500'
-} as const;
+    rejected: 'bg-red-500',
+} as const
 
 // In JobCard.tsx
-import { JOB_STATUS_COLORS } from '@/features/jobs/constants';
-const statusColor = JOB_STATUS_COLORS[status];
+import {JOB_STATUS_COLORS} from '@/features/jobs/constants'
+const statusColor = JOB_STATUS_COLORS[status]
 
 // In JobsList.tsx
-import { JOB_STATUS_COLORS } from '@/features/jobs/constants';
-const statusColor = JOB_STATUS_COLORS[status];
+import {JOB_STATUS_COLORS} from '@/features/jobs/constants'
+const statusColor = JOB_STATUS_COLORS[status]
 ```
 
 **Why This Matters:**
@@ -315,7 +316,7 @@ src/
 
 ```typescript
 // JobDetailModal.tsx (450 lines)
-export function JobDetailModal({ jobId }: Props) {
+export function JobDetailModal({jobId}: Props) {
     // 450 lines of code...
     // - Job details
     // - AI analysis display

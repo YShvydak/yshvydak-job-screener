@@ -58,6 +58,7 @@ Use this skill for all feature development:
 ```
 
 **Automatic Workflow:**
+
 1. 🔍 Code exploration
 2. 📋 Architecture planning
 3. 💻 Implementation
@@ -75,15 +76,17 @@ When using `/feature-dev`, YOU MUST follow these rules:
 **Flow:** Controller → Service → Repository → Database
 
 **Wrong:**
+
 ```typescript
 // In service - NEVER do direct database access
-const jobs = await this.db.query("SELECT * FROM jobs");
+const jobs = await this.db.query('SELECT * FROM jobs')
 ```
 
 **Right:**
+
 ```typescript
 // ALWAYS use repository layer
-const jobs = await this.jobRepository.findAll();
+const jobs = await this.jobRepository.findAll()
 ```
 
 ### 2. Job Deduplication
@@ -91,9 +94,9 @@ const jobs = await this.jobRepository.findAll();
 **Always check `serpapi_job_id` before inserting:**
 
 ```typescript
-const existing = await this.jobRepository.findBySerpAPIId(result.job_id);
+const existing = await this.jobRepository.findBySerpAPIId(result.job_id)
 if (!existing) {
-    await this.jobRepository.create(jobData);
+    await this.jobRepository.create(jobData)
 }
 ```
 
@@ -119,40 +122,44 @@ npm install @google/generative-ai
 ### Backend Features (Server)
 
 **1. Create Controller:**
+
 ```typescript
 // packages/server/src/controllers/job.controller.ts
 export class JobController {
     async getJobs(req: Request, res: Response) {
-        const jobs = await req.services.jobService.getJobs();
-        ResponseHelper.success(res, jobs);
+        const jobs = await req.services.jobService.getJobs()
+        ResponseHelper.success(res, jobs)
     }
 }
 ```
 
 **2. Create Service:**
+
 ```typescript
 // packages/server/src/services/job.service.ts
 export class JobService {
     async getJobs() {
-        return await this.jobRepository.findAll();
+        return await this.jobRepository.findAll()
     }
 }
 ```
 
 **3. Create Repository:**
+
 ```typescript
 // packages/server/src/repositories/job.repository.ts
 export class JobRepository {
     async findAll() {
-        return this.db.all("SELECT * FROM jobs");
+        return this.db.all('SELECT * FROM jobs')
     }
 }
 ```
 
 **4. Add Route:**
+
 ```typescript
 // packages/server/src/routes/job.routes.ts
-router.get('/jobs', jobController.getJobs);
+router.get('/jobs', jobController.getJobs)
 ```
 
 ### Frontend Features (Web)
@@ -160,6 +167,7 @@ router.get('/jobs', jobController.getJobs);
 Follow **Feature-Based Architecture:**
 
 **1. Create feature directory:**
+
 ```bash
 packages/web/src/features/{feature-name}/
 ├── components/       # Feature-specific components
@@ -171,11 +179,13 @@ packages/web/src/features/{feature-name}/
 ```
 
 **2. Add components:**
+
 - Keep components under 200 lines
 - Split large components into smaller ones
 - Use Atomic Design for shared components
 
 **3. Add Zustand store:**
+
 ```typescript
 // features/jobs/store/jobsStore.ts
 export const useJobsStore = create<JobsState>()(
@@ -187,11 +197,12 @@ export const useJobsStore = create<JobsState>()(
 ```
 
 **4. Export public API:**
+
 ```typescript
 // features/jobs/index.ts
-export * from './components';
-export * from './hooks';
-export * from './store/jobsStore';
+export * from './components'
+export * from './hooks'
+export * from './store/jobsStore'
 ```
 
 ---
@@ -201,12 +212,14 @@ export * from './store/jobsStore';
 ### TypeScript
 
 ✅ **DO:**
+
 - Use strict mode
 - Define interfaces for all data structures
 - Avoid `any` type
 - Use type inference where possible
 
 ❌ **DON'T:**
+
 - Use `any` unless absolutely necessary
 - Ignore type errors
 - Disable strict checks
@@ -219,6 +232,7 @@ npm run lint:fix
 ```
 
 **Rules:**
+
 - No unused variables
 - No console.log (use Logger)
 - Consistent code style
@@ -231,6 +245,7 @@ npm run format
 ```
 
 **Configuration:**
+
 - 4 spaces indentation
 - Single quotes
 - Semicolons
@@ -243,6 +258,7 @@ npm run format
 **Framework:** Vitest
 
 **Run tests:**
+
 ```bash
 npm test                 # Run all tests
 npm run test:watch       # Watch mode
@@ -250,19 +266,21 @@ npm run test:coverage    # Coverage report
 ```
 
 **Writing tests:**
+
 ```typescript
 // packages/server/src/repositories/__tests__/job.repository.test.ts
-import { describe, it, expect } from 'vitest';
+import {describe, it, expect} from 'vitest'
 
 describe('JobRepository', () => {
     it('should find job by SerpAPI ID', async () => {
-        const job = await jobRepository.findBySerpAPIId('test-id');
-        expect(job).toBeDefined();
-    });
-});
+        const job = await jobRepository.findBySerpAPIId('test-id')
+        expect(job).toBeDefined()
+    })
+})
 ```
 
 **Coverage Targets:**
+
 - Repositories: 80%+
 - Services: 70%+
 - Controllers: 60%+
@@ -281,6 +299,7 @@ main              # Production-ready code
 ### Commit Messages
 
 **Format:**
+
 ```
 <type>: <subject>
 
@@ -290,6 +309,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -298,6 +318,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - `chore`: Maintenance
 
 **Example:**
+
 ```
 feat: add SerpAPI job search integration
 
@@ -314,13 +335,15 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ### Adding Dependencies
 
 **1. Check Context7-MCP FIRST:**
+
 ```typescript
 // Use Context7-MCP tools to check latest docs
-mcp__plugin_context7_context7__resolve-library-id("package-name");
-mcp__plugin_context7_context7__query-docs("How to use package-name");
+mcp__plugin_context7_context7__resolve - library - id('package-name')
+mcp__plugin_context7_context7__query - docs('How to use package-name')
 ```
 
 **2. Then install:**
+
 ```bash
 npm install package-name
 ```
@@ -328,6 +351,7 @@ npm install package-name
 ### Updating Dependencies
 
 **Check Context7-MCP for breaking changes:**
+
 ```bash
 npm update package-name  # After checking docs
 ```
@@ -338,13 +362,13 @@ npm update package-name  # After checking docs
 
 **When to update docs:**
 
-| Change | Update File |
-|--------|------------|
-| New endpoint | docs/API_REFERENCE.md |
-| File moved | docs/ai/FILE_LOCATIONS.md |
-| New anti-pattern | docs/ai/ANTI_PATTERNS.md |
-| New feature | docs/features/FEATURE.md |
-| Flow changed | docs/ai/CONCEPT_MAP.md |
+| Change           | Update File               |
+| ---------------- | ------------------------- |
+| New endpoint     | docs/API_REFERENCE.md     |
+| File moved       | docs/ai/FILE_LOCATIONS.md |
+| New anti-pattern | docs/ai/ANTI_PATTERNS.md  |
+| New feature      | docs/features/FEATURE.md  |
+| Flow changed     | docs/ai/CONCEPT_MAP.md    |
 
 **See:** [docs/ai/DOCUMENTATION_UPDATE_RULES.md](ai/DOCUMENTATION_UPDATE_RULES.md)
 
@@ -392,16 +416,18 @@ DEBUG=* npm run dev
 ```
 
 **Use Logger:**
-```typescript
-import { Logger } from '@/utils/Logger';
 
-Logger.info('Job fetched', { jobId });
-Logger.error('Failed to fetch jobs', { error });
+```typescript
+import {Logger} from '@/utils/Logger'
+
+Logger.info('Job fetched', {jobId})
+Logger.error('Failed to fetch jobs', {error})
 ```
 
 ### Frontend
 
 **Use browser DevTools:**
+
 - React DevTools
 - Zustand DevTools
 - Network tab for API calls

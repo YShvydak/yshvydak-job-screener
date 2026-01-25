@@ -171,14 +171,14 @@ Need flow diagram? → Read CONCEPT_MAP.md
 
 ## 📊 Token Usage
 
-| Document                           | Lines | Tokens (approx) | When to Read              |
-| ---------------------------------- | ----- | --------------- | ------------------------- |
-| **CLAUDE.md**                      | 250   | 2,000           | ✅ **Always (startup)**   |
-| **FILE_LOCATIONS.md**              | 170   | 1,400           | When searching            |
-| **ANTI_PATTERNS.md**               | 200   | 1,500           | When coding               |
-| **CONCEPT_MAP.md**                 | 280   | 2,000           | When understanding flows  |
-| **DECISIONS.md**                   | 350   | 2,500           | When understanding "why"  |
-| **DOCUMENTATION_UPDATE_RULES.md**  | 150   | 1,200           | For AI assistants         |
+| Document                          | Lines | Tokens (approx) | When to Read             |
+| --------------------------------- | ----- | --------------- | ------------------------ |
+| **CLAUDE.md**                     | 250   | 2,000           | ✅ **Always (startup)**  |
+| **FILE_LOCATIONS.md**             | 170   | 1,400           | When searching           |
+| **ANTI_PATTERNS.md**              | 200   | 1,500           | When coding              |
+| **CONCEPT_MAP.md**                | 280   | 2,000           | When understanding flows |
+| **DECISIONS.md**                  | 350   | 2,500           | When understanding "why" |
+| **DOCUMENTATION_UPDATE_RULES.md** | 150   | 1,200           | For AI assistants        |
 
 **Total:** ~1,400 lines, ~10,600 tokens (split across 6 files)
 
@@ -276,7 +276,7 @@ Before committing updates:
 ### Feature Documentation
 
 - [docs/features/](../features/) - Feature-specific deep dives
-  - [AI_ANALYSIS.md](../features/AI_ANALYSIS.md) - AI job analysis (API/CLI methods)
+    - [AI_ANALYSIS.md](../features/AI_ANALYSIS.md) - AI job analysis (API/CLI methods)
 
 ---
 
@@ -289,6 +289,7 @@ Use `/docs-audit` skill to check documentation quality:
 ```
 
 **What it checks:**
+
 - Token budget (are docs too large?)
 - Code-documentation alignment
 - Outdated references
@@ -296,6 +297,7 @@ Use `/docs-audit` skill to check documentation quality:
 - Vibe coding readiness
 
 **When to use:**
+
 - Before starting new development session
 - After major code changes
 - When documentation feels outdated

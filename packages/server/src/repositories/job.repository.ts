@@ -1,40 +1,40 @@
-import { Database } from 'better-sqlite3';
-import { v4 as uuidv4 } from 'uuid';
-import { Job, JobInput, JobFilters, JobStatus, JobWithAnalysis } from '@yshvydak-job-screener/shared';
+import {Database} from 'better-sqlite3'
+import {v4 as uuidv4} from 'uuid'
+import {Job, JobInput, JobFilters, JobStatus, JobWithAnalysis} from '@yshvydak-job-screener/shared'
 
 /**
  * Repository for jobs table operations
  * ⚠️ CRITICAL: Always use findBySerpAPIId() before create() to prevent duplicates
  */
 export class JobRepository {
-    constructor(private db: Database) { }
+    constructor(private db: Database) {}
 
     /**
      * Find all jobs with optional filters
      */
     findAll(filters?: JobFilters): Job[] {
-        let sql = 'SELECT * FROM jobs';
-        const conditions: string[] = [];
-        const params: (string | number)[] = [];
+        let sql = 'SELECT * FROM jobs'
+        const conditions: string[] = []
+        const params: (string | number)[] = []
 
         if (filters?.status) {
-            conditions.push('status = ?');
-            params.push(filters.status);
+            conditions.push('status = ?')
+            params.push(filters.status)
         }
 
         if (filters?.profileId) {
-            conditions.push('profile_id = ?');
-            params.push(filters.profileId);
+            conditions.push('profile_id = ?')
+            params.push(filters.profileId)
         }
 
         if (conditions.length > 0) {
-            sql += ' WHERE ' + conditions.join(' AND ');
+            sql += ' WHERE ' + conditions.join(' AND ')
         }
 
-        sql += ' ORDER BY fetched_at DESC';
+        sql += ' ORDER BY fetched_at DESC'
 
-        const stmt = this.db.prepare(sql);
-        return stmt.all(...params) as Job[];
+        const stmt = this.db.prepare(sql)
+        return stmt.all(...params) as Job[]
     }
 
     /**
@@ -53,51 +53,51 @@ export class JobRepository {
                 a.analyzed_at
             FROM jobs j
             LEFT JOIN ai_analyses a ON j.id = a.job_id
-        `;
-        const conditions: string[] = [];
-        const params: (string | number)[] = [];
+        `
+        const conditions: string[] = []
+        const params: (string | number)[] = []
 
         if (filters?.status) {
-            conditions.push('j.status = ?');
-            params.push(filters.status);
+            conditions.push('j.status = ?')
+            params.push(filters.status)
         }
 
         if (filters?.profileId) {
-            conditions.push('j.profile_id = ?');
-            params.push(filters.profileId);
+            conditions.push('j.profile_id = ?')
+            params.push(filters.profileId)
         }
 
         if (filters?.minScore !== undefined) {
-            conditions.push('a.match_score >= ?');
-            params.push(filters.minScore);
+            conditions.push('a.match_score >= ?')
+            params.push(filters.minScore)
         }
 
         if (filters?.hasAnalysis !== undefined) {
             if (filters.hasAnalysis) {
-                conditions.push('a.id IS NOT NULL');
+                conditions.push('a.id IS NOT NULL')
             } else {
-                conditions.push('a.id IS NULL');
+                conditions.push('a.id IS NULL')
             }
         }
 
         if (conditions.length > 0) {
-            sql += ' WHERE ' + conditions.join(' AND ');
+            sql += ' WHERE ' + conditions.join(' AND ')
         }
 
-        sql += ' ORDER BY j.fetched_at DESC';
+        sql += ' ORDER BY j.fetched_at DESC'
 
-        const stmt = this.db.prepare(sql);
-        const rows = stmt.all(...params) as any[];
+        const stmt = this.db.prepare(sql)
+        const rows = stmt.all(...params) as any[]
 
-        return rows.map(row => this.mapRowToJobWithAnalysis(row));
+        return rows.map((row) => this.mapRowToJobWithAnalysis(row))
     }
 
     /**
      * Find job by ID
      */
     findById(id: string): Job | null {
-        const stmt = this.db.prepare('SELECT * FROM jobs WHERE id = ?');
-        return (stmt.get(id) as Job) || null;
+        const stmt = this.db.prepare('SELECT * FROM jobs WHERE id = ?')
+        return (stmt.get(id) as Job) || null
     }
 
     /**
@@ -105,8 +105,8 @@ export class JobRepository {
      * ⚠️ CRITICAL: Use this to check for duplicates before creating a job
      */
     findBySerpAPIId(serpApiJobId: string): Job | null {
-        const stmt = this.db.prepare('SELECT * FROM jobs WHERE serpapi_job_id = ?');
-        return (stmt.get(serpApiJobId) as Job) || null;
+        const stmt = this.db.prepare('SELECT * FROM jobs WHERE serpapi_job_id = ?')
+        return (stmt.get(serpApiJobId) as Job) || null
     }
 
     /**
@@ -114,8 +114,8 @@ export class JobRepository {
      * ⚠️ IMPORTANT: Check findBySerpAPIId() first to prevent duplicates!
      */
     create(input: JobInput): Job {
-        const id = uuidv4();
-        const now = new Date().toISOString();
+        const id = uuidv4()
+        const now = new Date().toISOString()
 
         const stmt = this.db.prepare(`
             INSERT INTO jobs (
@@ -123,7 +123,7 @@ export class JobRepository {
                 description, apply_link, posted_date, source, status,
                 fetched_at, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
-        `);
+        `)
 
         stmt.run(
             id,
@@ -139,46 +139,46 @@ export class JobRepository {
             now,
             now,
             now
-        );
+        )
 
-        return this.findById(id)!;
+        return this.findById(id)!
     }
 
     /**
      * Update job status
      */
     updateStatus(id: string, status: JobStatus): Job | null {
-        const existing = this.findById(id);
-        if (!existing) return null;
+        const existing = this.findById(id)
+        if (!existing) return null
 
-        const now = new Date().toISOString();
+        const now = new Date().toISOString()
 
         const stmt = this.db.prepare(`
             UPDATE jobs
             SET status = ?, updated_at = ?
             WHERE id = ?
-        `);
+        `)
 
-        stmt.run(status, now, id);
-        return this.findById(id);
+        stmt.run(status, now, id)
+        return this.findById(id)
     }
 
     /**
      * Delete a job
      */
     delete(id: string): boolean {
-        const stmt = this.db.prepare('DELETE FROM jobs WHERE id = ?');
-        const result = stmt.run(id);
-        return result.changes > 0;
+        const stmt = this.db.prepare('DELETE FROM jobs WHERE id = ?')
+        const result = stmt.run(id)
+        return result.changes > 0
     }
 
     /**
      * Delete all jobs
      */
     deleteAll(): number {
-        const stmt = this.db.prepare('DELETE FROM jobs');
-        const result = stmt.run();
-        return result.changes;
+        const stmt = this.db.prepare('DELETE FROM jobs')
+        const result = stmt.run()
+        return result.changes
     }
 
     /**
@@ -187,23 +187,23 @@ export class JobRepository {
     countByStatus(): Record<JobStatus | 'total', number> {
         const stmt = this.db.prepare(`
             SELECT status, COUNT(*) as count FROM jobs GROUP BY status
-        `);
-        const rows = stmt.all() as { status: JobStatus; count: number }[];
+        `)
+        const rows = stmt.all() as {status: JobStatus; count: number}[]
 
         const result: Record<JobStatus | 'total', number> = {
             new: 0,
             applied: 0,
             saved: 0,
             rejected: 0,
-            total: 0
-        };
+            total: 0,
+        }
 
-        rows.forEach(row => {
-            result[row.status] = row.count;
-            result.total += row.count;
-        });
+        rows.forEach((row) => {
+            result[row.status] = row.count
+            result.total += row.count
+        })
 
-        return result;
+        return result
     }
 
     /**
@@ -224,8 +224,8 @@ export class JobRepository {
             status: row.status,
             fetched_at: row.fetched_at,
             created_at: row.created_at,
-            updated_at: row.updated_at
-        };
+            updated_at: row.updated_at,
+        }
 
         if (row.analysis_id) {
             job.analysis = {
@@ -236,10 +236,10 @@ export class JobRepository {
                 strengths: row.strengths,
                 gaps: row.gaps,
                 reasoning: row.reasoning,
-                analyzed_at: row.analyzed_at
-            };
+                analyzed_at: row.analyzed_at,
+            }
         }
 
-        return job;
+        return job
     }
 }

@@ -131,19 +131,19 @@ packages/web:
 
 ## Quick Find
 
-| Need to... | Location |
-|------------|----------|
-| Add new API endpoint | `packages/server/src/controllers/` + `routes/` |
-| Add business logic | `packages/server/src/services/` |
-| Add database query | `packages/server/src/repositories/` |
-| Add new page | `packages/web/src/pages/` |
-| Add state management | `packages/web/src/stores/` |
-| SerpAPI integration | `packages/server/src/services/search.service.ts` |
-| Gemini AI integration | `packages/server/src/services/ai.service.ts` |
-| Job deduplication | `packages/server/src/repositories/job.repository.ts` |
-| Database schema | `packages/server/src/database/schema.sql` |
-| Environment config | `packages/server/src/config/environment.config.ts` |
-| Shared types | `shared/src/types/` |
+| Need to...            | Location                                             |
+| --------------------- | ---------------------------------------------------- |
+| Add new API endpoint  | `packages/server/src/controllers/` + `routes/`       |
+| Add business logic    | `packages/server/src/services/`                      |
+| Add database query    | `packages/server/src/repositories/`                  |
+| Add new page          | `packages/web/src/pages/`                            |
+| Add state management  | `packages/web/src/stores/`                           |
+| SerpAPI integration   | `packages/server/src/services/search.service.ts`     |
+| Gemini AI integration | `packages/server/src/services/ai.service.ts`         |
+| Job deduplication     | `packages/server/src/repositories/job.repository.ts` |
+| Database schema       | `packages/server/src/database/schema.sql`            |
+| Environment config    | `packages/server/src/config/environment.config.ts`   |
+| Shared types          | `shared/src/types/`                                  |
 
 ---
 

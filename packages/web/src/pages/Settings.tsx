@@ -1,105 +1,114 @@
-import { useEffect, useState } from 'react';
-import { AIAnalysisMethod } from '@yshvydak-job-screener/shared';
-import { useSettingsStore } from '../stores/settingsStore';
-import * as api from '../api/client';
+import {useEffect, useState} from 'react'
+import {AIAnalysisMethod} from '@yshvydak-job-screener/shared'
+import {useSettingsStore} from '../stores/settingsStore'
+import * as api from '../api/client'
 
 interface APIStatus {
     serpapi: {
-        configured: boolean;
-        name: string;
-        description: string;
-    };
+        configured: boolean
+        name: string
+        description: string
+    }
     gemini: {
-        configured: boolean;
-        name: string;
-        description: string;
-    };
+        configured: boolean
+        name: string
+        description: string
+    }
 }
 
 export function Settings() {
-    const { cvContent, hasCV, aiMethod, loading, error, fetchCV, saveCV, deleteCV, fetchAIMethod, setAIMethod } = useSettingsStore();
-    const [editingCV, setEditingCV] = useState(false);
-    const [cvText, setCvText] = useState('');
-    const [clearingJobs, setClearingJobs] = useState(false);
-    const [clearJobsError, setClearJobsError] = useState<string | null>(null);
-    const [clearJobsMessage, setClearJobsMessage] = useState<string | null>(null);
-    const [apiStatus, setApiStatus] = useState<APIStatus | null>(null);
-    const [loadingApiStatus, setLoadingApiStatus] = useState(true);
+    const {
+        cvContent,
+        hasCV,
+        aiMethod,
+        loading,
+        error,
+        fetchCV,
+        saveCV,
+        deleteCV,
+        fetchAIMethod,
+        setAIMethod,
+    } = useSettingsStore()
+    const [editingCV, setEditingCV] = useState(false)
+    const [cvText, setCvText] = useState('')
+    const [clearingJobs, setClearingJobs] = useState(false)
+    const [clearJobsError, setClearJobsError] = useState<string | null>(null)
+    const [clearJobsMessage, setClearJobsMessage] = useState<string | null>(null)
+    const [apiStatus, setApiStatus] = useState<APIStatus | null>(null)
+    const [loadingApiStatus, setLoadingApiStatus] = useState(true)
 
     useEffect(() => {
-        fetchCV();
-        fetchAIMethod();
-        fetchAPIStatus();
-    }, []);
+        fetchCV()
+        fetchAIMethod()
+        fetchAPIStatus()
+    }, [])
 
     const fetchAPIStatus = async () => {
-        setLoadingApiStatus(true);
+        setLoadingApiStatus(true)
         try {
-            const data = await api.get<{ status: APIStatus }>('/settings/api-status');
-            setApiStatus(data.status);
+            const data = await api.get<{status: APIStatus}>('/settings/api-status')
+            setApiStatus(data.status)
         } catch (err) {
-            console.error('Failed to fetch API status:', err);
+            console.error('Failed to fetch API status:', err)
         } finally {
-            setLoadingApiStatus(false);
+            setLoadingApiStatus(false)
         }
-    };
+    }
 
     useEffect(() => {
-        setCvText(cvContent);
-    }, [cvContent]);
+        setCvText(cvContent)
+    }, [cvContent])
 
     const handleSaveCV = async () => {
         try {
-            await saveCV(cvText);
-            setEditingCV(false);
+            await saveCV(cvText)
+            setEditingCV(false)
         } catch {
             // Error handled in store
         }
-    };
+    }
 
     const handleDeleteCV = async () => {
         if (confirm('Delete your CV? This will disable AI job matching.')) {
             try {
-                await deleteCV();
+                await deleteCV()
             } catch {
                 // Error handled in store
             }
         }
-    };
+    }
 
     const handleClearJobs = async () => {
         if (!confirm('Delete all jobs? This cannot be undone.')) {
-            return;
+            return
         }
 
-        setClearingJobs(true);
-        setClearJobsError(null);
-        setClearJobsMessage(null);
+        setClearingJobs(true)
+        setClearJobsError(null)
+        setClearJobsMessage(null)
         try {
-            await api.del('/jobs');
-            setClearJobsMessage('All jobs have been deleted.');
+            await api.del('/jobs')
+            setClearJobsMessage('All jobs have been deleted.')
         } catch (err) {
-            setClearJobsError((err as Error).message);
+            setClearJobsError((err as Error).message)
         } finally {
-            setClearingJobs(false);
+            setClearingJobs(false)
         }
-    };
+    }
 
     const handleAIMethodChange = async (method: AIAnalysisMethod) => {
         try {
-            await setAIMethod(method);
+            await setAIMethod(method)
         } catch {
             // Error handled in store
         }
-    };
+    }
 
     return (
         <div className="space-y-8">
             <div>
                 <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-                <p className="mt-1 text-gray-600">
-                    Configure your job screener
-                </p>
+                <p className="mt-1 text-gray-600">Configure your job screener</p>
             </div>
 
             {error && (
@@ -113,11 +122,10 @@ export function Settings() {
                 <div className="p-6 border-b border-gray-200">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-lg font-medium text-gray-900">
-                                CV / Resume
-                            </h3>
+                            <h3 className="text-lg font-medium text-gray-900">CV / Resume</h3>
                             <p className="mt-1 text-sm text-gray-500">
-                                Your CV is used by AI to analyze job matches. Paste your CV text below.
+                                Your CV is used by AI to analyze job matches. Paste your CV text
+                                below.
                             </p>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -143,18 +151,16 @@ export function Settings() {
                             <div className="flex justify-end space-x-3">
                                 <button
                                     onClick={() => {
-                                        setCvText(cvContent);
-                                        setEditingCV(false);
+                                        setCvText(cvContent)
+                                        setEditingCV(false)
                                     }}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                                >
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveCV}
                                     disabled={loading}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                                >
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                                     {loading ? 'Saving...' : 'Save CV'}
                                 </button>
                             </div>
@@ -169,14 +175,12 @@ export function Settings() {
                             <div className="flex justify-end space-x-3">
                                 <button
                                     onClick={handleDeleteCV}
-                                    className="px-4 py-2 text-red-600 hover:text-red-800"
-                                >
+                                    className="px-4 py-2 text-red-600 hover:text-red-800">
                                     Delete CV
                                 </button>
                                 <button
                                     onClick={() => setEditingCV(true)}
-                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                                >
+                                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
                                     Edit CV
                                 </button>
                             </div>
@@ -188,8 +192,7 @@ export function Settings() {
                             </p>
                             <button
                                 onClick={() => setEditingCV(true)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                                 Add CV
                             </button>
                         </div>
@@ -200,9 +203,7 @@ export function Settings() {
             {/* AI Analysis Method */}
             <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">
-                        AI Analysis Method
-                    </h3>
+                    <h3 className="text-lg font-medium text-gray-900">AI Analysis Method</h3>
                     <p className="mt-1 text-sm text-gray-500">
                         Choose how job analysis is performed
                     </p>
@@ -238,7 +239,7 @@ export function Settings() {
                         <div>
                             <p className="font-medium text-gray-900">Local CLI</p>
                             <p className="text-sm text-gray-500">
-                                Use local Gemini CLI (requires 'gemini' command installed)
+                                Use local Gemini CLI (requires &apos;gemini&apos; command installed)
                             </p>
                         </div>
                     </label>
@@ -248,12 +249,8 @@ export function Settings() {
             {/* API Status */}
             <div className="bg-white rounded-lg shadow">
                 <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900">
-                        API Status
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                        External API connections status
-                    </p>
+                    <h3 className="text-lg font-medium text-gray-900">API Status</h3>
+                    <p className="mt-1 text-sm text-gray-500">External API connections status</p>
                 </div>
                 <div className="p-6">
                     {loadingApiStatus ? (
@@ -262,34 +259,52 @@ export function Settings() {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between py-3 border-b border-gray-100">
                                 <div>
-                                    <p className="font-medium text-gray-900">{apiStatus.serpapi.name}</p>
-                                    <p className="text-sm text-gray-500">{apiStatus.serpapi.description}</p>
+                                    <p className="font-medium text-gray-900">
+                                        {apiStatus.serpapi.name}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        {apiStatus.serpapi.description}
+                                    </p>
                                 </div>
-                                <span className={`px-3 py-1 text-sm rounded-full ${apiStatus.serpapi.configured
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-yellow-100 text-yellow-800'
+                                <span
+                                    className={`px-3 py-1 text-sm rounded-full ${
+                                        apiStatus.serpapi.configured
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800'
                                     }`}>
-                                    {apiStatus.serpapi.configured ? 'Configured' : 'Requires API Key'}
+                                    {apiStatus.serpapi.configured
+                                        ? 'Configured'
+                                        : 'Requires API Key'}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between py-3">
                                 <div>
-                                    <p className="font-medium text-gray-900">{apiStatus.gemini.name}</p>
-                                    <p className="text-sm text-gray-500">{apiStatus.gemini.description}</p>
+                                    <p className="font-medium text-gray-900">
+                                        {apiStatus.gemini.name}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        {apiStatus.gemini.description}
+                                    </p>
                                 </div>
-                                <span className={`px-3 py-1 text-sm rounded-full ${apiStatus.gemini.configured
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-yellow-100 text-yellow-800'
+                                <span
+                                    className={`px-3 py-1 text-sm rounded-full ${
+                                        apiStatus.gemini.configured
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800'
                                     }`}>
-                                    {apiStatus.gemini.configured ? 'Configured' : 'Requires API Key'}
+                                    {apiStatus.gemini.configured
+                                        ? 'Configured'
+                                        : 'Requires API Key'}
                                 </span>
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center py-4 text-red-500">Failed to load API status</div>
+                        <div className="text-center py-4 text-red-500">
+                            Failed to load API status
+                        </div>
                     )}
                     <p className="mt-4 text-sm text-gray-500">
-                        API keys are configured in the server's .env file.
+                        API keys are configured in the server&apos;s .env file.
                     </p>
                 </div>
             </div>
@@ -297,12 +312,8 @@ export function Settings() {
             {/* Danger Zone */}
             <div className="bg-white rounded-lg shadow border border-red-200">
                 <div className="p-6 border-b border-red-100">
-                    <h3 className="text-lg font-medium text-red-700">
-                        Danger Zone
-                    </h3>
-                    <p className="mt-1 text-sm text-red-600">
-                        This action is irreversible.
-                    </p>
+                    <h3 className="text-lg font-medium text-red-700">Danger Zone</h3>
+                    <p className="mt-1 text-sm text-red-600">This action is irreversible.</p>
                 </div>
                 <div className="p-6 space-y-3">
                     {clearJobsError && (
@@ -318,12 +329,11 @@ export function Settings() {
                     <button
                         onClick={handleClearJobs}
                         disabled={clearingJobs}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                    >
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">
                         {clearingJobs ? 'Clearing Jobs...' : 'Delete All Jobs'}
                     </button>
                 </div>
             </div>
         </div>
-    );
+    )
 }

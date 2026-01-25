@@ -1,7 +1,7 @@
 ---
 paths:
-  - packages/server/src/services/search.service.ts
-  - packages/server/src/controllers/search.controller.ts
+    - packages/server/src/services/search.service.ts
+    - packages/server/src/controllers/search.controller.ts
 ---
 
 # SerpAPI Integration Rules
@@ -14,6 +14,7 @@ paths:
 ## Request Parameters
 
 ### Always included:
+
 ```typescript
 {
     engine: 'google_jobs',
@@ -24,49 +25,54 @@ paths:
 ```
 
 ### Optional (only if provided):
+
 ```typescript
 // Location - OPTIONAL (empty = global search)
 if (profile.location && profile.location.trim()) {
-    params.location = profile.location;
+    params.location = profile.location
 
     // Radius only with location
     if (profile.radius) {
-        params.lrad = Math.round(profile.radius * 0.621371); // km to miles
+        params.lrad = Math.round(profile.radius * 0.621371) // km to miles
     }
 }
 
 // Date filter
 if (profile.date_posted) {
-    params.chips = `date_posted:${profile.date_posted}`;
+    params.chips = `date_posted:${profile.date_posted}`
 }
 ```
 
 ## Response Handling
 
 ### Success with results:
+
 ```typescript
 if (response.jobs_results) {
-    return response.jobs_results; // Array of jobs
+    return response.jobs_results // Array of jobs
 }
 ```
 
 ### No results (VALID response, not error):
+
 ```typescript
 if (response.error?.includes("hasn't returned any results")) {
-    return []; // Empty array, not an error
+    return [] // Empty array, not an error
 }
 ```
 
 ### Actual error:
+
 ```typescript
 if (response.error) {
-    throw new Error(`SerpAPI error: ${response.error}`);
+    throw new Error(`SerpAPI error: ${response.error}`)
 }
 ```
 
 ## Job Mapping
 
 SerpAPI field → Our field:
+
 - `job_id` → `serpapi_job_id` (UNIQUE, for deduplication)
 - `title` → `title`
 - `company_name` → `company`

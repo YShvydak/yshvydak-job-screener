@@ -44,9 +44,9 @@ packages/server/src/
 
 ```typescript
 // ALWAYS check before insert
-const existing = await jobRepository.findBySerpAPIId(result.job_id);
+const existing = await jobRepository.findBySerpAPIId(result.job_id)
 if (!existing) {
-    await jobRepository.create(jobData);
+    await jobRepository.create(jobData)
 }
 ```
 
@@ -235,12 +235,12 @@ const apiKey = process.env.GEMINI_API_KEY
 ```typescript
 // WRONG - location is now optional
 if (!input.location) {
-    throw new Error('Location is required');
+    throw new Error('Location is required')
 }
 
 // RIGHT - empty location = global search
 if (profile.location && profile.location.trim()) {
-    params.location = profile.location;
+    params.location = profile.location
 }
 ```
 
@@ -248,14 +248,14 @@ if (profile.location && profile.location.trim()) {
 
 ```typescript
 // WRONG - date_posted is required
-service.create({ name: 'Test', keywords: 'react', location: '' })
+service.create({name: 'Test', keywords: 'react', location: ''})
 
 // RIGHT - always provide date_posted
-service.create({ 
-    name: 'Test', 
-    keywords: 'react', 
-    location: '', 
-    date_posted: 'week' 
+service.create({
+    name: 'Test',
+    keywords: 'react',
+    location: '',
+    date_posted: 'week',
 })
 ```
 
@@ -289,16 +289,16 @@ service.create({
 
 ## Quick Fixes
 
-| Issue | Solution |
-|-------|----------|
-| Duplicate jobs | Check `serpapi_job_id` before insert |
-| Missing CV for AI | Upload CV in Settings page |
-| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env` |
-| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI |
-| Switch AI method | Settings page or dropdown on Analyze button |
-| SerpAPI quota exceeded | Check SerpAPI dashboard |
-| 0 results returned | Valid response, try different keywords |
-| Port conflict | Kill process: `lsof -ti:3001 \| xargs kill -9` |
+| Issue                   | Solution                                       |
+| ----------------------- | ---------------------------------------------- |
+| Duplicate jobs          | Check `serpapi_job_id` before insert           |
+| Missing CV for AI       | Upload CV in Settings page                     |
+| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env`              |
+| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI          |
+| Switch AI method        | Settings page or dropdown on Analyze button    |
+| SerpAPI quota exceeded  | Check SerpAPI dashboard                        |
+| 0 results returned      | Valid response, try different keywords         |
+| Port conflict           | Kill process: `lsof -ti:3001 \| xargs kill -9` |
 
 ---
 
@@ -346,46 +346,46 @@ service.create({
 ### Job Types
 
 ```typescript
-type JobStatus = 'new' | 'applied' | 'saved' | 'rejected';
-type AIAnalysisMethod = 'api' | 'local';
+type JobStatus = 'new' | 'applied' | 'saved' | 'rejected'
+type AIAnalysisMethod = 'api' | 'local'
 
 interface Job {
-    id: string;
-    profile_id: string;
-    serpapi_job_id: string;
-    title: string;
-    company: string | null;
-    location: string | null;
-    description: string | null;
-    apply_link: string | null;
-    posted_date: string | null;
-    source: string | null;
-    status: JobStatus;
-    fetched_at: string;
-    created_at: string;
-    updated_at: string;
+    id: string
+    profile_id: string
+    serpapi_job_id: string
+    title: string
+    company: string | null
+    location: string | null
+    description: string | null
+    apply_link: string | null
+    posted_date: string | null
+    source: string | null
+    status: JobStatus
+    fetched_at: string
+    created_at: string
+    updated_at: string
 }
 
 interface JobWithAnalysis extends Job {
-    analysis?: AIAnalysis;
+    analysis?: AIAnalysis
 }
 ```
 
 ### Profile Types
 
 ```typescript
-type DatePosted = 'today' | '3days' | 'week' | 'month';
+type DatePosted = 'today' | '3days' | 'week' | 'month'
 
 interface SearchProfile {
-    id: string;
-    name: string;
-    keywords: string;
-    location: string;        // Empty string = global search
-    date_posted: DatePosted; // Required
-    radius?: number;         // Optional, km
-    active: number;          // 0 or 1
-    created_at: string;
-    updated_at: string;
+    id: string
+    name: string
+    keywords: string
+    location: string // Empty string = global search
+    date_posted: DatePosted // Required
+    radius?: number // Optional, km
+    active: number // 0 or 1
+    created_at: string
+    updated_at: string
 }
 ```
 
