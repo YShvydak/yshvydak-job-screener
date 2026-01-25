@@ -173,6 +173,14 @@ claude --chrome          # Claude with browser testing
 
 ---
 
+## Production Deployment
+
+Project is deployed on Raspberry Pi with auto-deploy on push to `main`.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for URLs, CI/CD details, and troubleshooting.
+
+---
+
 ## Anti-Patterns (NEVER DO)
 
 ### Bypassing Repository Layer
@@ -266,6 +274,7 @@ service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'we
 - [QUICKSTART.md](docs/QUICKSTART.md) - 5 minutes setup
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
 - [API_REFERENCE.md](docs/API_REFERENCE.md) - API endpoints
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment (Raspberry Pi, CI/CD, troubleshooting)
 - [docs/ai/](docs/ai/) - AI-specific documentation
 - [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md) - Architecture decisions
 - [docs/features/](docs/features/) - Feature deep dives
@@ -273,5 +282,5 @@ service.create({ name: 'Test', keywords: 'react', location: '', date_posted: 'we
 
 ---
 
-**Total:** ~250 lines | **Read time:** 2-3 minutes
+**Total:** ~260 lines | **Read time:** 2-3 minutes
 **Last Updated:** January 2026
