@@ -1,4 +1,4 @@
-import {defineConfig} from 'vitest/config'
+import { defineConfig } from 'vitest/config'
 import path from 'path'
 
 export default defineConfig({
@@ -10,7 +10,12 @@ export default defineConfig({
         restoreMocks: true,
         setupFiles: ['./vitest.setup.ts'],
         include: ['src/**/*.test.ts'],
-        exclude: ['node_modules', 'dist'],
+        exclude: [
+            'node_modules',
+            'dist',
+            // Skip integration tests in CI (they require API keys)
+            ...(process.env.CI ? ['src/**/*.integration.test.ts'] : []),
+        ],
         // Sequential execution for database isolation
         sequence: {
             concurrent: false,
