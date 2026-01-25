@@ -41,5 +41,6 @@ export default defineConfig({
             '@': path.resolve(__dirname, './src'),
             '@yshvydak-job-screener/shared': path.resolve(__dirname, '../../shared/src'),
         },
+        conditions: ['browser', 'module', 'import', 'default'],
     },
 })
