@@ -1,0 +1,38 @@
+name: Deploy to Raspberry Pi
+
+on:
+     push:
+          branches:
+               - main
+     workflow_dispatch:
+
+jobs:
+     deploy:
+          runs-on: self-hosted
+
+          steps:
+               - name: Checkout repository
+                 uses: actions/checkout@v4
+
+               - name: Setup Node.js
+                 uses: actions/setup-node@v4
+                 with:
+                      node-version: '20'
+                      cache: 'npm'
+
+               - name: Install Dependencies
+                 run: npm ci
+
+               - name: Build Application
+                 run: npm run build
+
+               - name: Deploy with PM2
+                 run: |
+                      # Install 'serve' globally if missing (needed for hosting the frontend static files)
+                      # npm install -g serve
+
+                      # Reload existing processes or start them if they are not running
+                      pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
+
+                      # Save the process list to ensure they respawn after a system reboot
+                      pm2 save
