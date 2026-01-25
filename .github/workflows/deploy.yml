@@ -27,11 +27,8 @@ jobs:
 
                - name: Deploy with PM2
                  run: |
-                      # Install 'serve' globally if missing (needed for hosting the frontend static files)
-                      # npm install -g serve
-
                       # Reload existing processes or start them if they are not running
-                      pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
+                      pm2 reload ecosystem.config.js || pm2 start ecosystem.config.js
 
                       # Save the process list to ensure they respawn after a system reboot
                       pm2 save
