@@ -45,6 +45,19 @@ export class JobService {
     }
 
     /**
+     * Update job description
+     */
+    updateDescription(id: string, description: string): Job {
+        const job = this.jobRepository.updateDescription(id, description)
+        if (!job) {
+            throw new Error(`Job not found: ${id}`)
+        }
+
+        Logger.info('Job description updated manually', {id})
+        return job
+    }
+
+    /**
      * Delete a job
      */
     delete(id: string): void {

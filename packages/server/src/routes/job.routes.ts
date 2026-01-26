@@ -19,6 +19,9 @@ export function createJobRoutes(controller: JobController): Router {
     // PATCH /api/jobs/:id/status - Update job status
     router.patch('/:id/status', controller.updateStatus)
 
+    // PATCH /api/jobs/:id/description - Update job description
+    router.patch('/:id/description', controller.updateDescription)
+
     // DELETE /api/jobs - Delete all jobs
     router.delete('/', controller.clearAll)
 

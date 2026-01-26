@@ -139,6 +139,39 @@ PATCH /api/jobs/:id/status
 
 ---
 
+### Update Job Description
+
+```http
+PATCH /api/jobs/:id/description
+```
+
+**Description:** Manually update job description. Useful for jobs from providers (e.g., Glassdoor) that don't include descriptions in search results.
+
+**Request Body:**
+
+```json
+{
+    "description": "Full job description text pasted from employer's website..."
+}
+```
+
+**Response:**
+
+```json
+{
+    "success": true,
+    "data": {
+        "id": "uuid",
+        "description": "Full job description text...",
+        "updated_at": "2026-01-20T11:00:00.000Z"
+    }
+}
+```
+
+**Use Case:** When a job is fetched without a description (common with Glassdoor API), users can manually copy the description from the job posting page and paste it via this endpoint to enable AI analysis.
+
+---
+
 ## Search Profiles Endpoints
 
 ### Get All Profiles

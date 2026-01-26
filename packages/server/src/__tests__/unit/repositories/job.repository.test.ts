@@ -373,6 +373,97 @@ describe('JobRepository', () => {
     })
 
     // ============================================
+    // updateDescription
+    // ============================================
+    describe('updateDescription', () => {
+        it('should update job description', () => {
+            // Arrange
+            const job = repository.create({
+                profile_id: 'test-profile',
+                provider: 'glassdoor',
+                provider_job_id: 'gd_desc_test',
+                title: 'Description Test',
+            })
+            expect(job.description).toBeNull()
+
+            // Act
+            const updated = repository.updateDescription(
+                job.id,
+                'This is a manually added job description'
+            )
+
+            // Assert
+            expect(updated).not.toBeNull()
+            expect(updated?.description).toBe('This is a manually added job description')
+        })
+
+        it('should return null when job does not exist', () => {
+            // Act
+            const result = repository.updateDescription('non-existent', 'New description')
+
+            // Assert
+            expect(result).toBeNull()
+        })
+
+        it('should update updated_at timestamp', () => {
+            // Arrange
+            const job = repository.create({
+                profile_id: 'test-profile',
+                provider: 'glassdoor',
+                provider_job_id: 'gd_timestamp',
+                title: 'Timestamp Test',
+            })
+            const originalUpdatedAt = job.updated_at
+
+            // Small delay to ensure timestamp difference
+            const startTime = Date.now()
+            while (Date.now() - startTime < 10) {
+                // busy wait
+            }
+
+            // Act
+            const updated = repository.updateDescription(job.id, 'Updated description')
+
+            // Assert
+            expect(updated?.updated_at).not.toBe(originalUpdatedAt)
+        })
+
+        it('should overwrite existing description', () => {
+            // Arrange
+            const job = repository.create({
+                profile_id: 'test-profile',
+                provider: 'serpapi',
+                provider_job_id: 'serp_overwrite',
+                title: 'Overwrite Test',
+                description: 'Original description',
+            })
+
+            // Act
+            const updated = repository.updateDescription(job.id, 'New description')
+
+            // Assert
+            expect(updated?.description).toBe('New description')
+        })
+
+        it('should allow empty string as description', () => {
+            // Arrange
+            const job = repository.create({
+                profile_id: 'test-profile',
+                provider: 'glassdoor',
+                provider_job_id: 'gd_empty',
+                title: 'Empty Test',
+                description: 'Some description',
+            })
+
+            // Act
+            const updated = repository.updateDescription(job.id, '')
+
+            // Assert
+            expect(updated?.description).toBe('')
+        })
+    })
+
+    // ============================================
     // delete
     // ============================================
     describe('delete', () => {

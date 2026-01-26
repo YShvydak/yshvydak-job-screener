@@ -183,6 +183,25 @@ export class JobRepository {
     }
 
     /**
+     * Update job description
+     */
+    updateDescription(id: string, description: string): Job | null {
+        const existing = this.findById(id)
+        if (!existing) return null
+
+        const now = new Date().toISOString()
+
+        const stmt = this.db.prepare(`
+            UPDATE jobs
+            SET description = ?, updated_at = ?
+            WHERE id = ?
+        `)
+
+        stmt.run(description, now, id)
+        return this.findById(id)
+    }
+
+    /**
      * Delete a job
      */
     delete(id: string): boolean {
