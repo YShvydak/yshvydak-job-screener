@@ -27,6 +27,7 @@ describe('ProfileService', () => {
         location: 'Remote',
         date_posted: 'week',
         radius: 50,
+        preferred_provider: null,
         active: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

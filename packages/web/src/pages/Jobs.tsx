@@ -178,6 +178,15 @@ function JobCard({
                                 className={`px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[job.status]}`}>
                                 {job.status}
                             </span>
+                            {job.provider && (
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+                                    {job.provider === 'serpapi'
+                                        ? 'SerpAPI'
+                                        : job.provider === 'glassdoor'
+                                          ? 'Glassdoor'
+                                          : job.provider}
+                                </span>
+                            )}
                         </div>
                         <p className="mt-1 text-sm text-gray-600">
                             {job.company} • {job.location}

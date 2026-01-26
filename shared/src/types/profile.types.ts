@@ -1,3 +1,5 @@
+import {JobProvider} from './provider.types'
+
 /**
  * Date Posted Filter Values (SerpAPI supported)
  */
@@ -13,6 +15,7 @@ export interface SearchProfile {
     location: string
     date_posted: DatePosted | null
     radius: number | null // in kilometers
+    preferred_provider: JobProvider | null // optional preferred provider
     active: number // 0 or 1 (SQLite boolean)
     created_at: string
     updated_at: string
@@ -27,6 +30,7 @@ export interface SearchProfileInput {
     location: string
     date_posted: DatePosted
     radius?: number
+    preferred_provider?: JobProvider
 }
 
 /**
@@ -34,6 +38,7 @@ export interface SearchProfileInput {
  */
 export interface SearchRequest {
     profileId: string
+    provider?: JobProvider // optional provider override
     analyzeWithAI?: boolean
 }
 
@@ -41,7 +46,8 @@ export interface SearchRequest {
  * Search execution result
  */
 export interface SearchResult {
-    jobsFound: number // Total from SerpAPI
+    jobsFound: number // Total from provider
     newJobs: number // Actually saved (not duplicates)
     analyzed: boolean // Whether AI analysis was run
+    provider?: JobProvider // Provider used for search
 }

@@ -148,11 +148,20 @@ export class JobRepository {
 
 #### SearchService
 
-- **Purpose:** SerpAPI integration and job search orchestration
+- **Purpose:** Job search orchestration via providers
 - **Key Methods:**
     - `runSearch()` - Main search workflow
-    - `fetchFromSerpAPI()` - Call SerpAPI with profile params
-    - `saveJobs()` - Save jobs preventing duplicates
+    - `executeSearch()` - Execute search using specific or default provider
+    - `saveJobs()` - Save jobs preventing duplicates across providers
+
+#### Provider Layer (Strategy Pattern)
+
+- **Purpose:** Abstract fetching logic for different job sources
+- **Components:**
+    - `ProviderRegistry` - Manages and selects providers
+    - `BaseProvider` - Interface for all providers
+    - `SerpAPIProvider` - Google Jobs integration
+    - `GlassdoorProvider` - Glassdoor integration
 
 #### AIService
 
@@ -258,6 +267,7 @@ CREATE TABLE search_profiles (
     location TEXT,                    -- OPTIONAL: empty = global search
     date_posted TEXT,                 -- today, 3days, week, month
     radius INTEGER,                   -- km (only used with location)
+    preferred_provider TEXT,          -- Optional: serpapi, glassdoor
     active INTEGER DEFAULT 1,         -- boolean (0/1)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -267,7 +277,9 @@ CREATE TABLE search_profiles (
 CREATE TABLE jobs (
     id TEXT PRIMARY KEY,              -- UUID
     profile_id TEXT REFERENCES search_profiles(id),
-    serpapi_job_id TEXT,              -- External job ID from SerpAPI
+    provider TEXT DEFAULT 'serpapi',  -- Job provider source
+    provider_job_id TEXT,             -- External job ID from provider
+    serpapi_job_id TEXT,              -- DEPRECATED: Kept for backward compatibility
     title TEXT NOT NULL,
     company TEXT,
     location TEXT,
@@ -279,7 +291,7 @@ CREATE TABLE jobs (
     fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(serpapi_job_id)            -- ⚠️ Prevent duplicates
+    UNIQUE(provider, provider_job_id) -- ⚠️ Prevent duplicates per provider
 );
 
 -- AI Analysis Results
@@ -319,9 +331,9 @@ CREATE INDEX idx_ai_analyses_match_score ON ai_analyses(match_score);
 
 ### Key Database Decisions
 
-1. **Job Deduplication:** UNIQUE constraint on `serpapi_job_id`
-    - Prevents duplicate jobs in database
-    - Application also checks before insert
+1. **Job Deduplication:** UNIQUE constraint on `provider` + `provider_job_id`
+    - Prevents duplicate jobs from same provider
+    - Allows same job from different providers (intentional)
     - Database constraint as safety net
 
 2. **One Analysis Per Job:** UNIQUE constraint on `job_id` in ai_analyses

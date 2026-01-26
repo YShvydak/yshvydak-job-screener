@@ -10,7 +10,8 @@ AI-powered job search automation that finds, analyzes, and scores job postings t
 
 ## 🌟 Features
 
-- 🔍 **Automated Job Search** - Integrates with SerpAPI to search multiple job boards
+- 🔍 **Automated Job Search** - Integrates with SerpAPI, Glassdoor, and more
+- 🔌 **Multi-Provider Support** - Unify jobs from different sources
 - 🤖 **AI-Powered Matching** - Google Gemini AI analyzes job fit based on your CV
 - 📊 **Match Scoring** - Get 0-100% match scores with strengths and gaps analysis
 - 📋 **Search Profiles** - Save and reuse search criteria (keywords, location, etc.)
@@ -86,16 +87,16 @@ For detailed setup instructions, see [QUICKSTART.md](docs/QUICKSTART.md)
 ┌─────────────────▼───────────────────────────────┐
 │  Backend (Express + TypeScript)                 │
 │  Controller → Service → Repository → Database   │
-│  ├─ SearchService (SerpAPI integration)         │
+│  ├─ SearchService (Provider Orchestration)      │
 │  ├─ AIService (Gemini AI job analysis)          │
 │  └─ JobRepository (SQLite storage)              │
 └─────────────────┬───────────────────────────────┘
                   │
         ┌─────────┴─────────┐
-        │                   │
+        │ Provider Layer    │
    ┌────▼─────┐       ┌─────▼────┐
-   │ SerpAPI  │       │ Gemini   │
-   │ (Jobs)   │       │ AI       │
+   │ SerpAPI  │       │ Glassdoor│
+   │ (Google) │       │ (Scraper)│
    └──────────┘       └──────────┘
 ```
 
@@ -132,6 +133,9 @@ DATABASE_PATH=./data/jobs.db
 # API Keys (REQUIRED)
 SERPAPI_KEY=your_serpapi_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Provider Keys (OPTIONAL)
+GLASSDOOR_KEY=your_glassdoor_key
 
 # Frontend
 VITE_PORT=3000

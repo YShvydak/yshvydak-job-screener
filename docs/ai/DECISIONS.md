@@ -354,3 +354,51 @@ const params = {
 
 **Last Updated:** January 2026
 **Maintained by:** Development Team
+
+---
+
+## ADR-009: Multi-Provider Search Architecture
+
+**Date:** January 2026
+**Status:** Accepted
+
+### Context
+
+Need to support multiple job sources (SerpAPI, Glassdoor, etc.) instead of just one. Initial single-provider implementation was limiting.
+
+### Decision
+
+Implement **Strategy Pattern** for job providers with a centralized **ProviderRegistry**.
+Update deduplication logic to be provider-aware.
+
+### Rationale
+
+1.  **Extensibility** - easily add new providers (Indeed, LinkedIn, etc.)
+2.  **Abstraction** - `SearchService` doesn't need to know provider implementation details
+3.  **Flexibility** - Users can choose preferred provider per profile
+4.  **Fallback capabilities** - Future potential to fallback between providers
+
+### Implementation
+
+1.  **Provider Layer**:
+
+    ```typescript
+    interface BaseProvider {
+        search(params: SearchParams): Promise<Job[]>
+    }
+    class SerpAPIProvider implements BaseProvider { ... }
+    class GlassdoorProvider implements BaseProvider { ... }
+    ```
+
+2.  **Database Change**:
+    - Add `provider` column
+    - Add `provider_job_id` column
+    - Unique constraint: `UNIQUE(provider, provider_job_id)`
+    - Deprecate `serpapi_job_id` (keep for legacy compatibility)
+
+### Consequences
+
+- (+) scalable architecture
+- (+) provider-agnostic core logic
+- (-) slightly more complex initial setup
+- (-) need to normalize data from different sources

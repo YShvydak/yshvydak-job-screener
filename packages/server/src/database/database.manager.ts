@@ -41,7 +41,72 @@ export class DatabaseManager {
         // Execute schema (better-sqlite3 supports multiple statements)
         this.db.exec(schema)
 
+        // Run migrations for existing databases
+        this.runMigrations()
+
         console.log('✅ Database schema initialized')
+    }
+
+    /**
+     * Run migrations for existing databases
+     */
+    private runMigrations(): void {
+        // Create migrations tracking table if not exists
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `)
+
+        const migrationsDir = path.join(__dirname, 'migrations')
+        if (!fs.existsSync(migrationsDir)) {
+            return
+        }
+
+        const files = fs
+            .readdirSync(migrationsDir)
+            .filter((f) => f.endsWith('.sql'))
+            .sort()
+
+        for (const file of files) {
+            // Check if migration already executed
+            const executed = this.db
+                .prepare('SELECT 1 FROM schema_migrations WHERE name = ?')
+                .get(file)
+
+            if (executed) {
+                continue
+            }
+
+            console.log(`🔄 Running migration: ${file}`)
+
+            try {
+                const migrationPath = path.join(migrationsDir, file)
+                const migration = fs.readFileSync(migrationPath, 'utf8')
+
+                // Execute migration
+                this.db.exec(migration)
+
+                // Mark as executed
+                this.db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file)
+
+                console.log(`✅ Migration completed: ${file}`)
+            } catch (error) {
+                // Some migrations may fail if columns already exist (that's ok)
+                const errorMessage = error instanceof Error ? error.message : String(error)
+                if (errorMessage.includes('duplicate column name')) {
+                    console.log(`⏭️ Migration skipped (already applied): ${file}`)
+                    this.db
+                        .prepare('INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)')
+                        .run(file)
+                } else {
+                    console.error(`❌ Migration failed: ${file}`, error)
+                    throw error
+                }
+            }
+        }
     }
 
     /**

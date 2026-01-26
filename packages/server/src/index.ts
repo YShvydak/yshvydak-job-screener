@@ -16,6 +16,9 @@ import {JobService} from './services/job.service'
 import {SearchService} from './services/search.service'
 import {AIService} from './services/ai.service'
 
+// Providers
+import {ProviderRegistry, SerpAPIProvider, GlassdoorProvider} from './providers'
+
 // Controllers
 import {ProfileController} from './controllers/profile.controller'
 import {JobController} from './controllers/job.controller'
@@ -73,10 +76,15 @@ export function createApp(db: DatabaseManager): Application {
     const analysisRepository = new AnalysisRepository(db.getDB())
     const settingsRepository = new SettingsRepository(db.getDB())
 
+    // Initialize Provider Registry
+    const providerRegistry = new ProviderRegistry()
+    providerRegistry.register(new SerpAPIProvider({apiKey: env.SERPAPI_KEY}))
+    providerRegistry.register(new GlassdoorProvider({apiKey: env.GLASSDOOR_KEY}))
+
     // Initialize Services
     const profileService = new ProfileService(profileRepository)
     const jobService = new JobService(jobRepository)
-    const searchService = new SearchService(jobRepository, profileRepository)
+    const searchService = new SearchService(jobRepository, profileRepository, providerRegistry)
     const aiService = new AIService(analysisRepository, jobRepository, settingsRepository)
 
     // Initialize Controllers

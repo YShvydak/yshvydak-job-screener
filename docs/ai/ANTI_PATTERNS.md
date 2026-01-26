@@ -61,16 +61,20 @@ async saveJobs(serpResults: SerpAPIResult[], profileId: string) {
 
 ```typescript
 // In search.service.ts
-async saveJobs(serpResults: SerpAPIResult[], profileId: string) {
+async saveJobs(results: Job[], profileId: string) {
     const savedJobs: Job[] = [];
 
-    for (const result of serpResults) {
-        // ALWAYS check for existing job first
-        const existing = await this.jobRepository.findBySerpAPIId(result.job_id);
+    for (const result of results) {
+        // ALWAYS check for existing job first (Provider + Provider Job ID)
+        const existing = await this.jobRepository.findByProviderJobId(
+            result.provider,
+            result.provider_job_id
+        );
 
         if (!existing) {
             const job = await this.jobRepository.create({
-                serpapi_job_id: result.job_id,
+                provider: result.provider,
+                provider_job_id: result.provider_job_id,
                 title: result.title,
                 // ...
             });

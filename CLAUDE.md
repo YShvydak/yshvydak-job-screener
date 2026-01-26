@@ -16,21 +16,21 @@
 - ALWAYS: Full layered chain for all operations
 - Location: `packages/server/src/{controllers,services,repositories}/`
 
-### 2. External APIs - SerpAPI + Gemini AI
+### 2. External APIs - Job Search Providers + Gemini AI
 
-**SerpAPI:** Job search integration (google_jobs engine)
+**Job Search:** Strategy Pattern via `ProviderRegistry` (SerpAPI, Glassdoor)
 **Gemini AI:** Job matching analysis (match score, strengths, gaps)
 
 - API keys in `.env` (NEVER hardcode)
 - Check Context7-MCP BEFORE installing/updating dependencies
-- Location: `packages/server/src/services/{search,ai}.service.ts`
+- Location: `packages/server/src/services/ai.service.ts` & `providers/`
 
 ### 3. Job Deduplication - ALWAYS Check
 
-**Strategy:** Prevent duplicate jobs using `serpapi_job_id`
+**Strategy:** Prevent duplicate jobs using `provider_job_id` + `provider`
 
-- ALWAYS check `jobRepository.findBySerpAPIId()` before insert
-- Database UNIQUE constraint on `serpapi_job_id`
+- ALWAYS check `jobRepository.findByProviderJobId()` before insert
+- Database UNIQUE constraint on `provider` + `provider_job_id`
 - Location: `packages/server/src/repositories/job.repository.ts`
 
 ### 4. Search Profiles - Location is OPTIONAL, date_posted is REQUIRED
@@ -60,12 +60,11 @@ User clicks "Search Now" on profile
   ↓ Frontend: POST /api/search/run
   ↓ SearchController → SearchService
   ↓ ProfileRepository.findById() → Get search criteria
-  ↓ SerpAPI fetch:
-  │   - q: keywords (required)
-  │   - hl: 'en' (always)
-  │   - location: only if provided (optional)
-  │   - lrad: radius in miles (only with location)
-  ↓ JobRepository.create() → Save jobs (prevent duplicates)
+  ↓ ProviderRegistry → Select Provider (default: 'serpapi')
+  ↓ ProviderSearch:
+  │   - Convert profile to provider-specific params
+  │   - Fetch jobs from external source
+  ↓ JobRepository.create() → Save jobs (prevent duplicates via findByProviderJobId)
   ↓ Optional: AIService.analyzeJobs()
   ↓ Frontend redirects to /jobs
   ↓ JobsList displays jobs with AI match scores
@@ -73,10 +72,10 @@ User clicks "Search Now" on profile
 
 **Key Dependencies:**
 
-- Job Deduplication ← `serpapi_job_id` uniqueness
+- Job Deduplication ← provider + provider_job_id uniqueness
 - AI Analysis ← CV content from settings
 - Match Score ← Gemini AI integration
-- Search Profiles ← SerpAPI parameters (location optional)
+- Search Profiles ← Provider parameters
 
 ---
 
@@ -203,7 +202,7 @@ await this.jobRepository.findAll()
 await this.jobRepository.create(jobData)
 
 // RIGHT
-const existing = await this.jobRepository.findBySerpAPIId(result.job_id)
+const existing = await this.jobRepository.findByProviderJobId(provider, jobId)
 if (!existing) {
     await this.jobRepository.create(jobData)
 }

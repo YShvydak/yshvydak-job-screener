@@ -1,3 +1,5 @@
+import {JobProvider} from './provider.types'
+
 /**
  * Job Status Enum
  */
@@ -16,7 +18,10 @@ export type AIAnalysisMethod = 'api' | 'local'
 export interface Job {
     id: string
     profile_id: string
-    serpapi_job_id: string
+    provider: JobProvider
+    provider_job_id: string
+    /** @deprecated Use provider_job_id instead */
+    serpapi_job_id?: string
     title: string
     company: string | null
     location: string | null
@@ -42,7 +47,10 @@ export interface JobWithAnalysis extends Job {
  */
 export interface JobInput {
     profile_id: string
-    serpapi_job_id: string
+    provider: JobProvider
+    provider_job_id: string
+    /** @deprecated Use provider_job_id instead */
+    serpapi_job_id?: string
     title: string
     company?: string
     location?: string

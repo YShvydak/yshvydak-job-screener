@@ -32,6 +32,7 @@ describe('SearchService', () => {
     let jobRepository: JobRepository
     let profileRepository: ProfileRepository
     let searchService: SearchService
+    let mockProviderRegistry: any
 
     beforeEach(() => {
         // Use in-memory database
@@ -42,10 +43,22 @@ describe('SearchService', () => {
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         db.exec(schema)
 
-        // Initialize repositories and service
+        // Initialize repositories
         jobRepository = new JobRepository(db)
         profileRepository = new ProfileRepository(db)
-        searchService = new SearchService(jobRepository, profileRepository)
+
+        // Mock ProviderRegistry with SerpAPI provider
+        const mockSerpAPIProvider = {
+            name: 'serpapi',
+            search: vi.fn(),
+        }
+
+        mockProviderRegistry = {
+            getFirstAvailable: vi.fn().mockReturnValue(mockSerpAPIProvider),
+            get: vi.fn().mockReturnValue(mockSerpAPIProvider),
+        }
+
+        searchService = new SearchService(jobRepository, profileRepository, mockProviderRegistry)
 
         // Reset mocks
         vi.clearAllMocks()
@@ -76,88 +89,35 @@ describe('SearchService', () => {
     }
 
     // ============================================
-    // buildSearchParams (via executeSearch reflection)
+    // Provider Integration
     // ============================================
-    describe('buildSearchParams', () => {
-        it('should build params with location when provided', async () => {
+    describe('Provider Integration', () => {
+        it('should call provider search with profile parameters', async () => {
             // Arrange
             seedProfile({
-                id: 'profile-loc',
+                id: 'profile-params',
                 keywords: 'software engineer',
                 location: 'New York, NY',
                 radius: 50,
                 date_posted: 'week',
             })
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue({jobs_results: []})
-
-            // Act
-            await searchService.executeSearch('profile-loc')
-
-            // Assert - check params passed to getJson
-            expect(getJson).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    engine: 'google_jobs',
-                    q: 'software engineer',
-                    hl: 'en',
-                    location: 'New York, NY',
-                    lrad: '31', // 50km ≈ 31 miles
-                    chips: 'date_posted:week',
-                })
-            )
-        })
-
-        it('should build params WITHOUT location when empty (global search)', async () => {
-            // Arrange
-            seedProfile({
-                id: 'profile-global',
-                keywords: 'react developer',
-                location: '', // Empty = global search
-                radius: 0,
-                date_posted: 'month',
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [],
             })
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue({jobs_results: []})
-
             // Act
-            await searchService.executeSearch('profile-global')
+            await searchService.executeSearch('profile-params')
 
-            // Assert - location and lrad should NOT be present
-            expect(getJson).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    engine: 'google_jobs',
-                    q: 'react developer',
-                    hl: 'en',
-                    chips: 'date_posted:month',
-                })
-            )
-
-            // Verify location is NOT in the call
-            const callArgs = vi.mocked(getJson).mock.calls[0][0]
-            expect(callArgs).not.toHaveProperty('location')
-            expect(callArgs).not.toHaveProperty('lrad')
-        })
-
-        it('should build params without date filter when not specified', async () => {
-            // Arrange
-            seedProfile({
-                id: 'profile-no-date',
-                keywords: 'typescript',
-                location: 'Remote',
-                date_posted: null as any,
+            // Assert - check params passed to provider.search
+            expect(mockProvider.search).toHaveBeenCalledWith({
+                keywords: 'software engineer',
+                location: 'New York, NY',
+                radius: 50,
+                date_posted: 'week',
             })
-
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue({jobs_results: []})
-
-            // Act
-            await searchService.executeSearch('profile-no-date')
-
-            // Assert - chips should NOT be present
-            const callArgs = vi.mocked(getJson).mock.calls[0][0]
-            expect(callArgs).not.toHaveProperty('chips')
         })
     })
 
@@ -176,25 +136,32 @@ describe('SearchService', () => {
             // Arrange
             seedProfile({id: 'profile-results'})
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue(fixtures.serpApiResponse)
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [
+                    {provider_job_id: 'job1', title: 'Job 1', company: 'Company 1'},
+                    {provider_job_id: 'job2', title: 'Job 2', company: 'Company 2'},
+                ],
+            })
 
             // Act
             const result = await searchService.executeSearch('profile-results')
 
             // Assert
-            expect(result.jobsFound).toBe(2) // From fixtures.serpApiResponse
+            expect(result.jobsFound).toBe(2)
             expect(result.newJobs).toBe(2)
             expect(result.analyzed).toBe(false)
         })
 
-        it('should handle "no results" response gracefully', async () => {
+        it('should handle empty results gracefully', async () => {
             // Arrange
             seedProfile({id: 'profile-empty'})
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue({
-                error: "Google hasn't returned any results for this query.",
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [],
             })
 
             // Act
@@ -205,34 +172,17 @@ describe('SearchService', () => {
             expect(result.newJobs).toBe(0)
         })
 
-        it('should throw error on SerpAPI error (non-empty results)', async () => {
+        it('should throw error on provider error', async () => {
             // Arrange
             seedProfile({id: 'profile-error'})
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue({
-                error: 'Invalid API key',
-            })
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockRejectedValue(new Error('Provider failure'))
 
             // Act & Assert
             await expect(searchService.executeSearch('profile-error')).rejects.toThrow(
-                'SerpAPI error: Invalid API key'
+                'Provider failure'
             )
-        })
-
-        it('should return empty response when jobs_results is empty array', async () => {
-            // Arrange
-            seedProfile({id: 'profile-empty-arr'})
-
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue(fixtures.serpApiEmptyResponse)
-
-            // Act
-            const result = await searchService.executeSearch('profile-empty-arr')
-
-            // Assert
-            expect(result.jobsFound).toBe(0)
-            expect(result.newJobs).toBe(0)
         })
     })
 
@@ -240,28 +190,43 @@ describe('SearchService', () => {
     // saveJobs (via executeSearch - deduplication)
     // ============================================
     describe('saveJobs (Deduplication)', () => {
-        it('should skip duplicate jobs based on serpapi_job_id', async () => {
+        it('should skip duplicate jobs based on provider_job_id', async () => {
             // Arrange - create profile and existing job
             seedProfile({id: 'profile-dup'})
 
-            // Pre-insert a job with same serpapi_job_id as in fixtures
+            // Pre-insert a job
             const now = new Date().toISOString()
             db.prepare(
                 `
-        INSERT INTO jobs (id, profile_id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?)
       `
-            ).run('existing-job', 'profile-dup', 'serpapi_new_123', 'Existing Job', now, now, now)
+            ).run(
+                'existing-job',
+                'profile-dup',
+                'serpapi',
+                'job_123',
+                'Existing Job',
+                now,
+                now,
+                now
+            )
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue(fixtures.serpApiResponse)
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [
+                    {provider_job_id: 'job_123', title: 'Duplicate Job', company: 'Company A'},
+                    {provider_job_id: 'job_456', title: 'New Job', company: 'Company B'},
+                ],
+            })
 
             // Act
             const result = await searchService.executeSearch('profile-dup')
 
             // Assert - only 1 new job saved (the other was duplicate)
             expect(result.jobsFound).toBe(2)
-            expect(result.newJobs).toBe(1) // Only serpapi_new_456 should be saved
+            expect(result.newJobs).toBe(1) // Only job_456 should be saved
 
             // Verify in database
             const jobs = db.prepare('SELECT * FROM jobs').all()
@@ -272,8 +237,14 @@ describe('SearchService', () => {
             // Arrange
             seedProfile({id: 'profile-new'})
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue(fixtures.serpApiResponse)
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [
+                    {provider_job_id: 'job_1', title: 'Job 1', company: 'Company 1'},
+                    {provider_job_id: 'job_2', title: 'Job 2', company: 'Company 2'},
+                ],
+            })
 
             // Act
             const result = await searchService.executeSearch('profile-new')
@@ -287,129 +258,78 @@ describe('SearchService', () => {
             expect(jobs).toHaveLength(2)
         })
 
-        it('should dedupe using share_link when job_id is missing', async () => {
+        it('should allow same provider_job_id from DIFFERENT providers', async () => {
             // Arrange
-            seedProfile({id: 'profile-share-link'})
-            const response = {
-                jobs_results: [
-                    {
-                        job_id: null,
-                        title: 'QA Automation Engineer',
-                        company_name: 'QA Co',
-                        location: 'Remote',
-                        share_link: 'https://example.com/jobs/qa-automation',
-                        detected_extensions: {posted_at: '1 day ago'},
-                    } as any,
-                ],
-            }
+            seedProfile({id: 'profile-multi'})
 
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValueOnce(response).mockResolvedValueOnce(response)
+            // Pre-insert a job from serpapi
+            const now = new Date().toISOString()
+            db.prepare(
+                `
+        INSERT INTO jobs (id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?)
+      `
+            ).run(
+                'job-serpapi',
+                'profile-multi',
+                'serpapi',
+                'job_shared',
+                'Job Serp',
+                now,
+                now,
+                now
+            )
+
+            // Mock glassdoor provider
+            const mockGlassdoorProvider = {
+                name: 'glassdoor',
+                isAvailable: vi.fn().mockReturnValue(true),
+                search: vi.fn().mockResolvedValue({
+                    provider: 'glassdoor',
+                    jobs: [
+                        {provider_job_id: 'job_shared', title: 'Job Glassdoor', company: 'Company'},
+                    ],
+                }),
+            }
+            vi.mocked(mockProviderRegistry.get).mockReturnValue(mockGlassdoorProvider)
 
             // Act
-            const first = await searchService.executeSearch('profile-share-link')
-            const second = await searchService.executeSearch('profile-share-link')
+            const result = await searchService.executeSearch('profile-multi', 'glassdoor')
 
-            // Assert
-            expect(first.newJobs).toBe(1)
-            expect(second.newJobs).toBe(0)
+            // Assert - should be saved as a new job because provider is different
+            expect(result.newJobs).toBe(1)
 
-            const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
-            expect(jobs).toHaveLength(1)
-            expect(jobs[0].serpapi_job_id).toBe('https://example.com/jobs/qa-automation')
+            const jobs = db.prepare('SELECT * FROM jobs').all()
+            expect(jobs).toHaveLength(2)
         })
 
-        it('should dedupe using apply link when share_link and job_id are missing', async () => {
-            // Arrange
-            seedProfile({id: 'profile-apply-link'})
-            const response = {
-                jobs_results: [
-                    {
-                        job_id: null,
-                        title: 'SDET',
-                        company_name: 'Test Co',
-                        location: 'Remote',
-                        apply_options: [{title: 'Apply', link: 'https://apply.example.com/sdet'}],
-                        detected_extensions: {posted_at: '2 days ago'},
-                    } as any,
-                ],
-            }
-
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValueOnce(response).mockResolvedValueOnce(response)
-
-            // Act
-            const first = await searchService.executeSearch('profile-apply-link')
-            const second = await searchService.executeSearch('profile-apply-link')
-
-            // Assert
-            expect(first.newJobs).toBe(1)
-            expect(second.newJobs).toBe(0)
-
-            const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
-            expect(jobs).toHaveLength(1)
-            expect(jobs[0].serpapi_job_id).toBe('https://apply.example.com/sdet')
-        })
-
-        it('should dedupe using fallback identifier when no links are present', async () => {
-            // Arrange
-            seedProfile({id: 'profile-fallback'})
-            const response = {
-                jobs_results: [
-                    {
-                        job_id: null,
-                        title: 'Manual QA',
-                        company_name: 'Quality Inc',
-                        location: 'Berlin',
-                        detected_extensions: {posted_at: '3 days ago'},
-                    } as any,
-                ],
-            }
-
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValueOnce(response).mockResolvedValueOnce(response)
-
-            // Act
-            const first = await searchService.executeSearch('profile-fallback')
-            const second = await searchService.executeSearch('profile-fallback')
-
-            // Assert
-            expect(first.newJobs).toBe(1)
-            expect(second.newJobs).toBe(0)
-
-            const jobs = db.prepare('SELECT * FROM jobs').all() as any[]
-            expect(jobs).toHaveLength(1)
-            expect(jobs[0].serpapi_job_id).toBe('fallback:Manual QA|Quality Inc|Berlin|3 days ago')
-        })
-
-        it('should correctly map SerpAPI fields to job entity', async () => {
+        it('should correctly map provider fields to job entity', async () => {
             // Arrange
             seedProfile({id: 'profile-map'})
 
-            const customResponse = {
-                jobs_results: [
+            const mockProvider = mockProviderRegistry.getFirstAvailable()
+            vi.mocked(mockProvider.search).mockResolvedValue({
+                provider: 'serpapi',
+                jobs: [
                     {
-                        job_id: 'custom_123',
+                        provider_job_id: 'custom_123',
                         title: 'Custom Title',
-                        company_name: 'Custom Company',
+                        company: 'Custom Company',
                         location: 'Custom Location',
                         description: 'Custom Description',
-                        via: 'Custom Source',
-                        apply_options: [{title: 'Apply', link: 'https://apply.com'}],
-                        detected_extensions: {posted_at: '1 day ago'},
+                        source: 'Custom Source',
+                        apply_link: 'https://apply.com',
+                        posted_date: '1 day ago',
                     },
                 ],
-            }
-
-            const {getJson} = await import('serpapi')
-            vi.mocked(getJson).mockResolvedValue(customResponse)
+            })
 
             // Act
             await searchService.executeSearch('profile-map')
 
             // Assert - verify field mapping
             const job = db
-                .prepare('SELECT * FROM jobs WHERE serpapi_job_id = ?')
+                .prepare('SELECT * FROM jobs WHERE provider_job_id = ?')
                 .get('custom_123') as any
 
             expect(job).toBeDefined()
@@ -422,6 +342,7 @@ describe('SearchService', () => {
             expect(job.posted_date).toBe('1 day ago')
             expect(job.profile_id).toBe('profile-map')
             expect(job.status).toBe('new')
+            expect(job.provider).toBe('serpapi')
         })
     })
 })

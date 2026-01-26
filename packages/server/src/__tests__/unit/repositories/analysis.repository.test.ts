@@ -39,10 +39,12 @@ describe('AnalysisRepository', () => {
         db.close()
     })
 
-    function createJob(serpapiId: string, title: string) {
+    function createJob(providerJobId: string, title: string) {
         return jobRepository.create({
             profile_id: 'test-profile',
-            serpapi_job_id: serpapiId,
+            provider: 'serpapi',
+            provider_job_id: providerJobId,
+            serpapi_job_id: providerJobId,
             title,
         })
     }

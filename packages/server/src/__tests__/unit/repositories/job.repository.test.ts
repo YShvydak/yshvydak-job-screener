@@ -43,37 +43,37 @@ describe('JobRepository', () => {
     // ============================================
     // findBySerpAPIId - CRITICAL DEDUPLICATION
     // ============================================
-    describe('findBySerpAPIId (CRITICAL - Deduplication)', () => {
-        it('should return job when serpapi_job_id exists', () => {
+    describe('findByProviderJobId (CRITICAL - Deduplication)', () => {
+        it('should return job when provider_job_id exists', () => {
             // Arrange - insert a job directly
             const now = new Date().toISOString()
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
-            ).run('job-1', 'serp_123', 'Developer', now, now, now)
+            ).run('job-1', 'serpapi', 'serp_123', 'Developer', now, now, now)
 
             // Act
-            const result = repository.findBySerpAPIId('serp_123')
+            const result = repository.findByProviderJobId('serpapi', 'serp_123')
 
             // Assert
             expect(result).not.toBeNull()
-            expect(result?.serpapi_job_id).toBe('serp_123')
+            expect(result?.provider_job_id).toBe('serp_123')
             expect(result?.title).toBe('Developer')
         })
 
-        it('should return null when serpapi_job_id does not exist', () => {
+        it('should return null when provider_job_id does not exist', () => {
             // Act
-            const result = repository.findBySerpAPIId('non_existent_id')
+            const result = repository.findByProviderJobId('serpapi', 'non_existent_id')
 
             // Assert
             expect(result).toBeNull()
         })
 
-        it('should return null for empty string serpapi_job_id', () => {
+        it('should return null for empty string provider_job_id', () => {
             // Act
-            const result = repository.findBySerpAPIId('')
+            const result = repository.findByProviderJobId('serpapi', '')
 
             // Assert
             expect(result).toBeNull()
@@ -84,27 +84,27 @@ describe('JobRepository', () => {
             const now = new Date().toISOString()
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
-            ).run('job-1', 'serp_111', 'Job 1', now, now, now)
+            ).run('job-1', 'serpapi', 'serp_111', 'Job 1', now, now, now)
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
-            ).run('job-2', 'serp_222', 'Job 2', now, now, now)
+            ).run('job-2', 'serpapi', 'serp_222', 'Job 2', now, now, now)
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
-            ).run('job-3', 'serp_333', 'Job 3', now, now, now)
+            ).run('job-3', 'serpapi', 'serp_333', 'Job 3', now, now, now)
 
             // Act
-            const result = repository.findBySerpAPIId('serp_222')
+            const result = repository.findByProviderJobId('serpapi', 'serp_222')
 
             // Assert
             expect(result).not.toBeNull()
@@ -129,7 +129,8 @@ describe('JobRepository', () => {
             // Act
             const result = repository.create({
                 profile_id: 'profile-1',
-                serpapi_job_id: 'serp_new_123',
+                provider: 'serpapi',
+                provider_job_id: 'serp_new_123',
                 title: 'Senior Engineer',
                 company: 'Test Company',
                 location: 'Remote',
@@ -142,7 +143,7 @@ describe('JobRepository', () => {
             // Assert
             expect(result).toBeDefined()
             expect(result.id).toBeDefined()
-            expect(result.serpapi_job_id).toBe('serp_new_123')
+            expect(result.provider_job_id).toBe('serp_new_123')
             expect(result.title).toBe('Senior Engineer')
             expect(result.company).toBe('Test Company')
             expect(result.status).toBe('new') // Default status
@@ -152,23 +153,25 @@ describe('JobRepository', () => {
             // Act
             const result = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_minimal',
+                provider: 'serpapi',
+                provider_job_id: 'serp_minimal',
                 title: 'Minimal Job',
             })
 
             // Assert
             expect(result).toBeDefined()
-            expect(result.serpapi_job_id).toBe('serp_minimal')
+            expect(result.provider_job_id).toBe('serp_minimal')
             expect(result.title).toBe('Minimal Job')
             expect(result.company).toBeNull()
             expect(result.location).toBeNull()
         })
 
-        it('should throw error on duplicate serpapi_job_id (UNIQUE constraint)', () => {
+        it('should throw error on duplicate provider_job_id (UNIQUE constraint)', () => {
             // Arrange - create first job
             repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_duplicate',
+                provider: 'serpapi',
+                provider_job_id: 'serp_duplicate',
                 title: 'First Job',
             })
 
@@ -176,7 +179,8 @@ describe('JobRepository', () => {
             expect(() => {
                 repository.create({
                     profile_id: 'test-profile',
-                    serpapi_job_id: 'serp_duplicate',
+                    provider: 'serpapi',
+                    provider_job_id: 'serp_duplicate',
                     title: 'Duplicate Job',
                 })
             }).toThrow() // SQLite UNIQUE constraint violation
@@ -186,13 +190,15 @@ describe('JobRepository', () => {
             // Act
             const job1 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_1',
+                provider: 'serpapi',
+                provider_job_id: 'serp_1',
                 title: 'Job 1',
             })
 
             const job2 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_2',
+                provider: 'serpapi',
+                provider_job_id: 'serp_2',
                 title: 'Job 2',
             })
 
@@ -210,7 +216,8 @@ describe('JobRepository', () => {
             // Arrange
             const created = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_find',
+                provider: 'serpapi',
+                provider_job_id: 'serp_find',
                 title: 'Find Me',
             })
 
@@ -252,9 +259,24 @@ describe('JobRepository', () => {
             ).run('profile-b', 'Profile B', 'engineer', 'NYC')
 
             // Seed some jobs
-            repository.create({serpapi_job_id: 'serp_1', title: 'Job 1', profile_id: 'profile-a'})
-            repository.create({serpapi_job_id: 'serp_2', title: 'Job 2', profile_id: 'profile-a'})
-            repository.create({serpapi_job_id: 'serp_3', title: 'Job 3', profile_id: 'profile-b'})
+            repository.create({
+                provider: 'serpapi',
+                provider_job_id: 'serp_1',
+                title: 'Job 1',
+                profile_id: 'profile-a',
+            })
+            repository.create({
+                provider: 'serpapi',
+                provider_job_id: 'serp_2',
+                title: 'Job 2',
+                profile_id: 'profile-a',
+            })
+            repository.create({
+                provider: 'serpapi',
+                provider_job_id: 'serp_3',
+                title: 'Job 3',
+                profile_id: 'profile-b',
+            })
         })
 
         it('should return all jobs without filters', () => {
@@ -304,7 +326,8 @@ describe('JobRepository', () => {
             // Arrange
             const job = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_status',
+                provider: 'serpapi',
+                provider_job_id: 'serp_status',
                 title: 'Status Test',
             })
             expect(job.status).toBe('new')
@@ -329,7 +352,8 @@ describe('JobRepository', () => {
             // Arrange
             const job = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_timestamp',
+                provider: 'serpapi',
+                provider_job_id: 'serp_timestamp',
                 title: 'Timestamp Test',
             })
             const originalUpdatedAt = job.updated_at
@@ -356,7 +380,8 @@ describe('JobRepository', () => {
             // Arrange
             const job = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_delete',
+                provider: 'serpapi',
+                provider_job_id: 'serp_delete',
                 title: 'Delete Me',
             })
 
@@ -385,12 +410,14 @@ describe('JobRepository', () => {
             // Arrange
             repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_delete_all_1',
+                provider: 'serpapi',
+                provider_job_id: 'serp_delete_all_1',
                 title: 'Job 1',
             })
             repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_delete_all_2',
+                provider: 'serpapi',
+                provider_job_id: 'serp_delete_all_2',
                 title: 'Job 2',
             })
 
@@ -419,17 +446,20 @@ describe('JobRepository', () => {
             // Arrange
             const job1 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_c1',
+                provider: 'serpapi',
+                provider_job_id: 'serp_c1',
                 title: 'Job 1',
             })
             const job2 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_c2',
+                provider: 'serpapi',
+                provider_job_id: 'serp_c2',
                 title: 'Job 2',
             })
             repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_c3',
+                provider: 'serpapi',
+                provider_job_id: 'serp_c3',
                 title: 'Job 3',
             })
 
@@ -465,7 +495,8 @@ describe('JobRepository', () => {
             // Arrange - create job and analysis
             const job = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_analysis',
+                provider: 'serpapi',
+                provider_job_id: 'serp_analysis',
                 title: 'Analysis Test',
             })
 
@@ -491,7 +522,8 @@ describe('JobRepository', () => {
             // Arrange
             repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_no_analysis',
+                provider: 'serpapi',
+                provider_job_id: 'serp_no_analysis',
                 title: 'No Analysis',
             })
 
@@ -507,12 +539,14 @@ describe('JobRepository', () => {
             // Arrange - create jobs with different scores
             const job1 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_s1',
+                provider: 'serpapi',
+                provider_job_id: 'serp_s1',
                 title: 'High Score',
             })
             const job2 = repository.create({
                 profile_id: 'test-profile',
-                serpapi_job_id: 'serp_s2',
+                provider: 'serpapi',
+                provider_job_id: 'serp_s2',
                 title: 'Low Score',
             })
 
@@ -549,11 +583,12 @@ describe('JobRepository', () => {
             // Insert jobs directly with specific timestamps
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-1',
+                'serpapi',
                 'serp_old',
                 'Old Job',
                 new Date(baseTime).toISOString(),
@@ -563,11 +598,12 @@ describe('JobRepository', () => {
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-2',
+                'serpapi',
                 'serp_new',
                 'New Job',
                 new Date(baseTime + 60000).toISOString(), // 1 minute later
@@ -577,11 +613,12 @@ describe('JobRepository', () => {
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-3',
+                'serpapi',
                 'serp_middle',
                 'Middle Job',
                 new Date(baseTime + 30000).toISOString(), // 30 seconds later
@@ -605,11 +642,12 @@ describe('JobRepository', () => {
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-1',
+                'serpapi',
                 'serp_1',
                 'Oldest Job',
                 new Date(baseTime).toISOString(),
@@ -619,11 +657,12 @@ describe('JobRepository', () => {
 
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-2',
+                'serpapi',
                 'serp_2',
                 'Newest Job',
                 new Date(baseTime + 120000).toISOString(), // 2 minutes later
@@ -667,11 +706,12 @@ describe('JobRepository', () => {
             // Job 1: Oldest, highest score
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-1',
+                'serpapi',
                 'serp_1',
                 'Old High Score',
                 new Date(baseTime).toISOString(),
@@ -682,11 +722,12 @@ describe('JobRepository', () => {
             // Job 2: Newest, lowest score
             db.prepare(
                 `
-        INSERT INTO jobs (id, serpapi_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-2',
+                'serpapi',
                 'serp_2',
                 'New Low Score',
                 new Date(baseTime + 60000).toISOString(),

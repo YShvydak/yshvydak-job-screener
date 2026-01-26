@@ -9,16 +9,19 @@ CREATE TABLE IF NOT EXISTS search_profiles (
     location TEXT NOT NULL,
     date_posted TEXT,                 -- today, 3days, week, month
     radius INTEGER,                   -- km
+    preferred_provider TEXT,          -- Optional: serpapi, glassdoor, etc.
     active INTEGER DEFAULT 1,         -- boolean (0/1)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Jobs (fetched from SerpAPI)
+-- Jobs (fetched from job search providers)
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,              -- UUID
     profile_id TEXT,
-    serpapi_job_id TEXT,              -- External job ID from SerpAPI
+    provider TEXT DEFAULT 'serpapi',  -- Job provider: serpapi, glassdoor, etc.
+    provider_job_id TEXT,             -- External job ID from provider
+    serpapi_job_id TEXT,              -- DEPRECATED: Kept for backward compatibility
     title TEXT NOT NULL,
     company TEXT,
     location TEXT,
@@ -30,8 +33,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (profile_id) REFERENCES search_profiles(id) ON DELETE SET NULL,
-    UNIQUE(serpapi_job_id)            -- ⚠️ CRITICAL: Prevent duplicates
+    FOREIGN KEY (profile_id) REFERENCES search_profiles(id) ON DELETE SET NULL
 );
 
 -- AI Analysis Results
@@ -68,6 +70,8 @@ CREATE TABLE IF NOT EXISTS job_notes (
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_profile_id ON jobs(profile_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_fetched_at ON jobs(fetched_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_provider ON jobs(provider);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_provider_job_id ON jobs(provider, provider_job_id);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_match_score ON ai_analyses(match_score);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_job_id ON ai_analyses(job_id);
 CREATE INDEX IF NOT EXISTS idx_search_profiles_active ON search_profiles(active);

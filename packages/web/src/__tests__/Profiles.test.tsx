@@ -8,12 +8,15 @@ import userEvent from '@testing-library/user-event'
 import {Profiles} from '../pages/Profiles'
 
 const fetchProfiles = vi.fn()
+const fetchProviders = vi.fn()
 
 const mockState = {
     profiles: [],
+    providers: [],
     loading: false,
     error: null,
     fetchProfiles,
+    fetchProviders,
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     toggleProfile: vi.fn(),

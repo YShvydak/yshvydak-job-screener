@@ -17,6 +17,7 @@ export const fixtures = {
         location: 'Remote',
         date_posted: 'week',
         radius: 50,
+        preferred_provider: null,
         active: 1,
     },
 
@@ -27,6 +28,7 @@ export const fixtures = {
         location: '', // Empty = global search
         date_posted: 'month',
         radius: 0,
+        preferred_provider: null,
         active: 1,
     },
 
@@ -37,6 +39,7 @@ export const fixtures = {
         location: 'New York',
         date_posted: 'week',
         radius: 25,
+        preferred_provider: null,
         active: 0,
     },
 
@@ -46,6 +49,8 @@ export const fixtures = {
     job: {
         id: 'test-job-1',
         profile_id: 'test-profile-1',
+        provider: 'serpapi' as const,
+        provider_job_id: 'serpapi_123456',
         serpapi_job_id: 'serpapi_123456',
         title: 'Senior Software Engineer',
         company: 'Test Company',
@@ -60,6 +65,8 @@ export const fixtures = {
     jobApplied: {
         id: 'test-job-2',
         profile_id: 'test-profile-1',
+        provider: 'serpapi' as const,
+        provider_job_id: 'serpapi_789012',
         serpapi_job_id: 'serpapi_789012',
         title: 'Frontend Developer',
         company: 'Another Company',
@@ -74,7 +81,9 @@ export const fixtures = {
     jobSaved: {
         id: 'test-job-3',
         profile_id: 'test-profile-1',
-        serpapi_job_id: 'serpapi_345678',
+        provider: 'glassdoor' as const,
+        provider_job_id: 'glassdoor_345678',
+        serpapi_job_id: undefined,
         title: 'Backend Engineer',
         company: 'Tech Corp',
         location: 'San Francisco, CA',

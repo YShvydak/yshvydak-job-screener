@@ -1,10 +1,17 @@
 import {Database} from 'better-sqlite3'
 import {v4 as uuidv4} from 'uuid'
-import {Job, JobInput, JobFilters, JobStatus, JobWithAnalysis} from '@yshvydak-job-screener/shared'
+import {
+    Job,
+    JobInput,
+    JobFilters,
+    JobStatus,
+    JobWithAnalysis,
+    JobProvider,
+} from '@yshvydak-job-screener/shared'
 
 /**
  * Repository for jobs table operations
- * ⚠️ CRITICAL: Always use findBySerpAPIId() before create() to prevent duplicates
+ * ⚠️ CRITICAL: Always use findByProviderJobId() before create() to prevent duplicates
  */
 export class JobRepository {
     constructor(private db: Database) {}
@@ -101,17 +108,27 @@ export class JobRepository {
     }
 
     /**
-     * Find job by SerpAPI job ID
+     * Find job by provider and provider job ID
      * ⚠️ CRITICAL: Use this to check for duplicates before creating a job
      */
+    findByProviderJobId(provider: JobProvider, providerJobId: string): Job | null {
+        const stmt = this.db.prepare(
+            'SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ?'
+        )
+        return (stmt.get(provider, providerJobId) as Job) || null
+    }
+
+    /**
+     * Find job by SerpAPI job ID
+     * @deprecated Use findByProviderJobId() instead
+     */
     findBySerpAPIId(serpApiJobId: string): Job | null {
-        const stmt = this.db.prepare('SELECT * FROM jobs WHERE serpapi_job_id = ?')
-        return (stmt.get(serpApiJobId) as Job) || null
+        return this.findByProviderJobId('serpapi', serpApiJobId)
     }
 
     /**
      * Create a new job
-     * ⚠️ IMPORTANT: Check findBySerpAPIId() first to prevent duplicates!
+     * ⚠️ IMPORTANT: Check findByProviderJobId() first to prevent duplicates!
      */
     create(input: JobInput): Job {
         const id = uuidv4()
@@ -119,16 +136,18 @@ export class JobRepository {
 
         const stmt = this.db.prepare(`
             INSERT INTO jobs (
-                id, profile_id, serpapi_job_id, title, company, location,
-                description, apply_link, posted_date, source, status,
-                fetched_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
+                id, profile_id, provider, provider_job_id, serpapi_job_id,
+                title, company, location, description, apply_link,
+                posted_date, source, status, fetched_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
         `)
 
         stmt.run(
             id,
             input.profile_id,
-            input.serpapi_job_id,
+            input.provider,
+            input.provider_job_id,
+            input.serpapi_job_id || null, // deprecated, keep for backward compatibility
             input.title,
             input.company || null,
             input.location || null,
@@ -213,6 +232,8 @@ export class JobRepository {
         const job: JobWithAnalysis = {
             id: row.id,
             profile_id: row.profile_id,
+            provider: row.provider || 'serpapi', // default for old data
+            provider_job_id: row.provider_job_id || row.serpapi_job_id,
             serpapi_job_id: row.serpapi_job_id,
             title: row.title,
             company: row.company,

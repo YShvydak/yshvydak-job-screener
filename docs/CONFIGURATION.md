@@ -12,6 +12,9 @@ Environment variables and configuration options for YShvydak Job Screener.
 # API Keys (REQUIRED)
 SERPAPI_KEY=your_serpapi_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Provider Keys (OPTIONAL)
+GLASSDOOR_KEY=your_glassdoor_key_internal_use_only
 ```
 
 **Get API Keys:**
@@ -96,6 +99,16 @@ VITE_API_BASE_URL=http://localhost:3001/api
 **Free Tier:** 100 searches/month
 
 **Documentation:** [https://serpapi.com/google-jobs-api](https://serpapi.com/google-jobs-api)
+
+---
+
+## Glassdoor Configuration
+
+**Engine:** Scraping / Internal API
+**Status:** Experimental
+**Environment Variables:**
+
+- `GLASSDOOR_KEY`: Internal key (if required)
 
 ---
 
