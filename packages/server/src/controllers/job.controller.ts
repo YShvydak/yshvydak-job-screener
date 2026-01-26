@@ -98,6 +98,27 @@ export class JobController {
     }
 
     /**
+     * PATCH /api/jobs/:id/description
+     * Update job description
+     */
+    updateDescription = (req: Request, res: Response): void => {
+        try {
+            const {id} = req.params
+            const {description} = req.body
+
+            if (!description) {
+                ResponseHelper.badRequest(res, 'Description is required')
+                return
+            }
+
+            const job = this.jobService.updateDescription(id, description)
+            ResponseHelper.success(res, {job})
+        } catch (error) {
+            ResponseHelper.error(res, error)
+        }
+    }
+
+    /**
      * DELETE /api/jobs/:id
      * Delete a job
      */

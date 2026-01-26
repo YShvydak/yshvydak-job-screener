@@ -151,7 +151,10 @@ function JobCard({
     isAnalyzing: boolean
     defaultMethod: AIAnalysisMethod
 }) {
+    const {updateDescription} = useJobStore()
     const [showDropdown, setShowDropdown] = useState(false)
+    const [isEditingDescription, setIsEditingDescription] = useState(false)
+    const [descriptionText, setDescriptionText] = useState(job.description || '')
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     // Close dropdown when clicking outside
@@ -164,6 +167,17 @@ function JobCard({
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
+
+    const handleSaveDescription = async () => {
+        try {
+            await updateDescription(job.id, descriptionText)
+            setIsEditingDescription(false)
+        } catch (err) {
+            console.error('Failed to update description:', err)
+            alert('Failed to update description')
+        }
+    }
+
     return (
         <div className="bg-white rounded-lg shadow">
             {/* Header */}
@@ -221,23 +235,62 @@ function JobCard({
             {isExpanded && (
                 <div className="border-t border-gray-200 p-4 space-y-4">
                     {/* Description */}
-                    {job.description ? (
-                        <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                            <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                {job.description}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                            <p className="text-sm text-gray-600 mb-3">
-                                Job description is not available from the search results. Please use
-                                the &quot;Apply&quot; button below to view full job details on the
-                                employer&apos;s website.
-                            </p>
-                        </div>
-                    )}
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
+
+                        {isEditingDescription ? (
+                            <div className="space-y-2">
+                                <textarea
+                                    value={descriptionText}
+                                    onChange={(e) => setDescriptionText(e.target.value)}
+                                    className="w-full h-48 p-2 border border-gray-300 rounded-md text-sm font-sans"
+                                    placeholder="Paste job description here..."
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleSaveDescription()
+                                        }}
+                                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setIsEditingDescription(false)
+                                            setDescriptionText(job.description || '')
+                                        }}
+                                        className="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : job.description ? (
+                            <div>
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                                    {job.description}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p className="text-sm text-gray-600 mb-3">
+                                    Job description is not available from the search results. Please
+                                    use the &quot;Apply&quot; button below to view full job details
+                                    on the employer&apos;s website.
+                                </p>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        setIsEditingDescription(true)
+                                    }}
+                                    className="text-sm text-blue-600 hover:underline">
+                                    Paste description manually
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* AI Analysis */}
                     {job.analysis && (
@@ -300,9 +353,11 @@ function JobCard({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation()
-                                                onAnalyze(job.id)
+                                                if (job.description) {
+                                                    onAnalyze(job.id)
+                                                }
                                             }}
-                                            disabled={isAnalyzing}
+                                            disabled={isAnalyzing || !job.description}
                                             className="px-3 py-1 text-sm bg-blue-600 text-white rounded-l-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
                                             {isAnalyzing ? (
                                                 <>
@@ -335,9 +390,10 @@ function JobCard({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation()
+                                                if (!job.description) return
                                                 setShowDropdown(!showDropdown)
                                             }}
-                                            disabled={isAnalyzing}
+                                            disabled={isAnalyzing || !job.description}
                                             className="px-2 py-1 text-sm bg-blue-600 text-white rounded-r-md border-l border-blue-500 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
                                             <svg
                                                 className="h-4 w-4"

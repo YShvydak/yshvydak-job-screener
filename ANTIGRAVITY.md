@@ -2,7 +2,7 @@
 
 > **Project:** YShvydak Job Screener - AI-powered job matching automation
 > **Type:** Open Source (Personal Job Search Automation)
-> **Stack:** Express + React + SQLite + SerpAPI + Google Gemini AI
+> **Stack:** Express + React + SQLite + SerpAPI + Glassdoor API + Google Gemini AI
 > **IDE:** Antigravity (Vibe Code Mode)
 
 ---
@@ -26,132 +26,67 @@ packages/server/src/
 - ❌ NEVER: Direct database calls from services
 - ❌ NEVER: Business logic in controllers
 
-### 2. External APIs - SerpAPI + Gemini AI
+### 2. External APIs (Multi-Provider Strategy)
 
-**SerpAPI:** Job search integration (google_jobs engine)
+**Primary: SerpAPI (Google Jobs)**
 
-- Location: `packages/server/src/services/search.service.ts`
-- API key in `.env` (NEVER hardcode)
+- Location: `packages/server/src/providers/serpapi.provider.ts`
+- Status: **Stable, Production Ready**
 
-**Gemini AI:** Job matching analysis (match score, strengths, gaps)
+**Secondary: Glassdoor (OpenWeb Ninja)**
+
+- Location: `packages/server/src/providers/glassdoor.provider.ts`
+- Status: **ALPHA / TESTING**. Use with caution.
+- _Strictly type-safe via `IJobSearchProvider` interface._
+
+**AI Analysis: Gemini AI**
 
 - Location: `packages/server/src/services/ai.service.ts`
-- API key in `.env` (NEVER hardcode)
+- Status: **Stable**
 
-### 3. Job Deduplication - ALWAYS Check
+### 3. Job Deduplication & Storage
 
-**Strategy:** Prevent duplicate jobs using `serpapi_job_id`
+**Strategy:**
 
-```typescript
-// ALWAYS check before insert
-const existing = await jobRepository.findBySerpAPIId(result.job_id)
-if (!existing) {
-    await jobRepository.create(jobData)
-}
-```
+- Jobs are identified by `provider` + `provider_job_id`.
+- `serpapi_job_id` is deprecated (mapped to `provider_job_id`).
+- **ALWAYS** check for existence using `jobRepository.findByProviderId(provider, id)` before insert.
 
-- Database UNIQUE constraint on `serpapi_job_id`
-- Location: `packages/server/src/repositories/job.repository.ts`
+### 4. Context7-MCP Integration - MANDATORY
 
-### 4. Search Profiles - Location is OPTIONAL
+**ALWAYS check Context7-MCP before:**
 
-**Configuration:**
-
-- Keywords: **required**
-- Location: **optional** (empty = global search)
-- date_posted: **required** (today, 3days, week, month)
-- Radius: optional (only with location)
-
-**SerpAPI params:**
-
-```typescript
-{
-    engine: 'google_jobs',
-    q: profile.keywords,        // required
-    hl: 'en',                   // always English
-    location: profile.location, // optional
-    lrad: radiusMiles,          // only with location
-    chips: `date_posted:${profile.date_posted}` // required
-}
-```
-
-### 5. Context7-MCP Integration - MANDATORY for Dependencies
-
-**ALWAYS check before dependency changes:**
-
-- Adding package? → Check Context7-MCP first
-- Updating package? → Check Context7-MCP first
-- Changing config? → Check Context7-MCP first
-
-**Why:** Context7-MCP provides package documentation and compatibility info to prevent breaking changes.
+- Adding/Updating packages
+- Changing configuration
+- _Why:_ Prevents dependency hell and breaking changes.
 
 ---
 
-## Project Structure
+## Project Structure (Current State)
 
 ### Backend (Express + SQLite)
 
 ```plaintext
 packages/server/src/
-├── index.ts                    # Entry point + Express setup
-├── config/
-│   └── environment.config.ts   # Environment variables
-├── controllers/                # HTTP handlers
-│   ├── job.controller.ts
-│   ├── profile.controller.ts
-│   ├── search.controller.ts
-│   ├── settings.controller.ts
-│   └── ai.controller.ts
-├── services/                   # Business logic
-│   ├── job.service.ts
-│   ├── profile.service.ts
-│   ├── search.service.ts       # SerpAPI integration
-│   └── ai.service.ts           # Gemini AI integration
-├── repositories/               # Data access
-│   ├── job.repository.ts
-│   ├── profile.repository.ts
-│   ├── settings.repository.ts
-│   └── analysis.repository.ts
-├── routes/                     # Route definitions
+├── index.ts
+├── config/environment.config.ts    # Env validation (SerpAPI, Glassdoor, Gemini)
+├── providers/                      # New Provider Layer
+│   ├── index.ts                    # Registry
+│   ├── serpapi.provider.ts
+│   └── glassdoor.provider.ts
+├── services/                       # Business Logic (Provider-agnostic)
+├── repositories/                   # Data Access
 ├── database/
-│   ├── database.manager.ts
-│   └── schema.sql
-└── utils/
-    ├── Logger.ts
-    └── ResponseHelper.ts
+│   ├── database.manager.ts         # Robust Schema+Migration loader
+│   ├── schema.sql
+│   └── migrations/                 # SQL migrations (Shipped to Prod)
+└── ...
 ```
 
 ### Frontend (React + Zustand)
 
-```plaintext
-packages/web/src/
-├── App.tsx                     # Main app with routing
-├── main.tsx                    # Entry point
-├── pages/                      # Page components
-│   ├── Dashboard.tsx
-│   ├── Jobs.tsx
-│   ├── Profiles.tsx
-│   └── Settings.tsx
-├── stores/                     # Zustand state management
-│   ├── jobStore.ts
-│   ├── profileStore.ts
-│   └── settingsStore.ts
-├── components/
-│   └── Layout.tsx
-└── api/
-    └── client.ts               # API client
-```
-
-### Shared Types
-
-```plaintext
-shared/src/
-├── index.ts
-└── types/
-    ├── job.types.ts
-    ├── profile.types.ts
-    └── api.types.ts
-```
+- `packages/web/src/pages/` - UI Pages
+- `packages/web/src/stores/` - State Management
 
 ---
 
@@ -160,270 +95,69 @@ shared/src/
 ### Essential Commands
 
 ```bash
-# Start all packages (server:3001 + web:3000)
-npm run dev
-
-# TypeScript validation
-npm run type-check
-
-# Auto-fix linting issues
-npm run lint:fix
+npm run dev              # Start dev server (server:3001 + web:3000)
+npm run type-check       # Validate types
+npm run lint:fix         # Fix linting
 ```
 
-### URLs
+### Deployment (Raspberry Pi)
 
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:3001`
-
-### Production Deployment
-
-Project is deployed on **Raspberry Pi** with auto-deploy on push to `main`.
-
-**Key Info:**
-
-- CI/CD: GitHub Actions → Raspberry Pi
-- See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
-    - Production URLs
-    - Deployment troubleshooting
-    - SSH access
-    - Service management
+- **CI/CD:** GitHub Actions → Self-hosted Runner.
+- **Build Process:** Copies `schema.sql` AND `migrations/` to `dist/`.
+- **Database:** Auto-migrates on startup. **Do not manually touch the DB file.**
 
 ---
 
-## Concept Flow
+## Known Issues (Vibe Coding Focus)
 
-```plaintext
-User clicks "Run Search" on profile
-  ↓ Frontend: POST /api/search/run
-  ↓ SearchController → SearchService
-  ↓ ProfileRepository.findById() → Get search criteria
-  ↓ SerpAPI fetch:
-  │   - q: keywords (required)
-  │   - hl: 'en' (always)
-  │   - location: only if provided (optional)
-  │   - lrad: radius in miles (only with location)
-  │   - chips: date_posted filter (required)
-  ↓ JobRepository.create() → Save jobs (prevent duplicates)
-  ↓ Optional: AIService.analyzeJobs()
-  ↓ Frontend redirects to /jobs
-  ↓ JobsList displays jobs with AI match scores
-```
-
-**Key Dependencies:**
-
-- Job Deduplication ← `serpapi_job_id` uniqueness
-- AI Analysis ← CV content from settings
-- Match Score ← Gemini AI integration
-- Search Profiles ← SerpAPI parameters (location optional)
+| Issue              | Status   | Note                                                            |
+| ------------------ | -------- | --------------------------------------------------------------- |
+| **Glassdoor API**  | ⚠️ Alpha | Integration is basic. Verify data quality before relying on it. |
+| **Schema Changes** | ✅ Fixed | Race condition fixed in `database.manager.ts`.                  |
+| **Migrations**     | ✅ Fixed | Now included in production build artifact.                      |
 
 ---
 
 ## Anti-Patterns (NEVER DO)
 
-### ❌ Bypassing Repository Layer
-
-```typescript
-// WRONG
-await this.db.query('SELECT * FROM jobs')
-
-// RIGHT
-await this.jobRepository.findAll()
-```
-
-### ❌ Not Preventing Job Duplicates
-
-```typescript
-// WRONG
-await this.jobRepository.create(jobData)
-
-// RIGHT
-const existing = await this.jobRepository.findBySerpAPIId(result.job_id)
-if (!existing) {
-    await this.jobRepository.create(jobData)
-}
-```
-
 ### ❌ Hardcoding API Keys
 
 ```typescript
-// WRONG
-const apiKey = 'AIzaSyC...'
-
-// RIGHT
-const apiKey = process.env.GEMINI_API_KEY
+// WRONG: const key = "123"
+// RIGHT: const key = env.GLASSDOOR_API_KEY
 ```
 
-### ❌ Requiring Location for Search
+### ❌ Bypassing Provider Abstraction
 
 ```typescript
-// WRONG - location is now optional
-if (!input.location) {
-    throw new Error('Location is required')
-}
-
-// RIGHT - empty location = global search
-if (profile.location && profile.location.trim()) {
-    params.location = profile.location
-}
+// WRONG: new SerpAPIProvider().search(...) inside controller
+// RIGHT: searchService.search(...) -> delegates to registered providers
 ```
 
-### ❌ Missing date_posted Field
+### ❌ Ignoring Duplicate Checks
 
 ```typescript
-// WRONG - date_posted is required
-service.create({name: 'Test', keywords: 'react', location: ''})
-
-// RIGHT - always provide date_posted
-service.create({
-    name: 'Test',
-    keywords: 'react',
-    location: '',
-    date_posted: 'week',
-})
+// WRONG: jobRepository.create(job)
+// RIGHT: if (!exists) jobRepository.create(job)
 ```
-
----
-
-## Vibe Code Development Rules
-
-### DO
-
-✅ Use Context7-MCP for all dependency lookups
-✅ Follow Layered Architecture (Controller → Service → Repository)
-✅ Check `serpapi_job_id` before job insert
-✅ Use environment variables for API keys
-✅ Handle empty location as global search
-✅ Always provide `date_posted` in search profiles
-✅ Use TypeScript types from `shared/src/types/`
-✅ Update `updated_at` timestamps on modifications
-✅ Use Logger utility for consistent logging
-✅ Return proper HTTP status codes via ResponseHelper
-
-### DON'T
-
-❌ NEVER bypass repository layer
-❌ NEVER hardcode API keys
-❌ NEVER require location (it's optional)
-❌ NEVER skip duplicate checking for jobs
-❌ NEVER commit without explicit user request
-❌ NEVER add dependencies without Context7-MCP check
-❌ NEVER make database schema changes without migration plan
-
----
-
-## Quick Fixes
-
-| Issue                   | Solution                                       |
-| ----------------------- | ---------------------------------------------- |
-| Duplicate jobs          | Check `serpapi_job_id` before insert           |
-| Missing CV for AI       | Upload CV in Settings page                     |
-| AI analysis fails (API) | Verify `GEMINI_API_KEY` in `.env`              |
-| AI analysis fails (CLI) | Run `gemini auth` to authenticate CLI          |
-| Switch AI method        | Settings page or dropdown on Analyze button    |
-| SerpAPI quota exceeded  | Check SerpAPI dashboard                        |
-| 0 results returned      | Valid response, try different keywords         |
-| Port conflict           | Kill process: `lsof -ti:3001 \| xargs kill -9` |
 
 ---
 
 ## Database Schema (Key Tables)
 
-### search_profiles
-
-- `id` (TEXT, PK)
-- `name` (TEXT, required)
-- `keywords` (TEXT, required)
-- `location` (TEXT, optional - empty = global)
-- `date_posted` (TEXT, required - today/3days/week/month)
-- `radius` (INTEGER, optional - km)
-- `active` (INTEGER, boolean 0/1)
-
 ### jobs
 
-- `id` (TEXT, PK)
-- `profile_id` (TEXT, FK)
-- `serpapi_job_id` (TEXT, UNIQUE) ← **Prevents duplicates**
-- `title` (TEXT, required)
-- `company` (TEXT)
-- `location` (TEXT)
-- `description` (TEXT)
-- `apply_link` (TEXT)
-- `posted_date` (TEXT) ← **From SerpAPI**
-- `source` (TEXT) ← LinkedIn, Indeed, etc.
-- `status` (TEXT) ← new/applied/saved/rejected
-- `fetched_at` (DATETIME)
+- `id` (PK)
+- `provider` (TEXT) - 'serpapi' | 'glassdoor'
+- `provider_job_id` (TEXT) - External ID
+- `profile_id` (FK)
+- `status` (new/applied/saved/rejected)
 
-### ai_analyses
+### search_profiles
 
-- `id` (TEXT, PK)
-- `job_id` (TEXT, FK, UNIQUE)
-- `match_score` (INTEGER, 0-100)
-- `recommendation` (TEXT) ← APPLY/MAYBE/SKIP
-- `strengths` (TEXT) ← JSON array
-- `gaps` (TEXT) ← JSON array
-- `reasoning` (TEXT)
+- `preferred_provider` (TEXT) - Optional override
 
 ---
 
-## Type Definitions Reference
-
-### Job Types
-
-```typescript
-type JobStatus = 'new' | 'applied' | 'saved' | 'rejected'
-type AIAnalysisMethod = 'api' | 'local'
-
-interface Job {
-    id: string
-    profile_id: string
-    serpapi_job_id: string
-    title: string
-    company: string | null
-    location: string | null
-    description: string | null
-    apply_link: string | null
-    posted_date: string | null
-    source: string | null
-    status: JobStatus
-    fetched_at: string
-    created_at: string
-    updated_at: string
-}
-
-interface JobWithAnalysis extends Job {
-    analysis?: AIAnalysis
-}
-```
-
-### Profile Types
-
-```typescript
-type DatePosted = 'today' | '3days' | 'week' | 'month'
-
-interface SearchProfile {
-    id: string
-    name: string
-    keywords: string
-    location: string // Empty string = global search
-    date_posted: DatePosted // Required
-    radius?: number // Optional, km
-    active: number // 0 or 1
-    created_at: string
-    updated_at: string
-}
-```
-
----
-
-## Documentation
-
-- [QUICKSTART.md](docs/QUICKSTART.md) - 5 minutes setup
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
-- [API_REFERENCE.md](docs/API_REFERENCE.md) - API endpoints
-- [docs/ai/](docs/ai/) - AI-specific documentation
-- [docs/features/](docs/features/) - Feature deep dives
-
----
-
-**Last Updated:** January 2026
+**Last Updated:** 2026-01-26
 **Optimized for:** Antigravity IDE (Vibe Code Mode)

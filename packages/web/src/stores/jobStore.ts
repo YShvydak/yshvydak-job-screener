@@ -27,6 +27,7 @@ interface JobState {
     fetchJobs: () => Promise<void>
     fetchStats: () => Promise<void>
     updateStatus: (id: string, status: JobStatus) => Promise<void>
+    updateDescription: (id: string, description: string) => Promise<void>
     deleteJob: (id: string) => Promise<void>
     analyzeJob: (id: string, method?: AIAnalysisMethod) => Promise<void>
     setFilters: (filters: Partial<JobFilters>) => void
@@ -76,6 +77,20 @@ export const useJobStore = create<JobState>()((set, get) => ({
             }))
             // Refresh stats after status change
             get().fetchStats()
+        } catch (error) {
+            set({error: (error as Error).message})
+            throw error
+        }
+    },
+
+    updateDescription: async (id: string, description: string) => {
+        try {
+            const data = await api.patch<{job: Job}>(`/jobs/${id}/description`, {description})
+            set((state) => ({
+                jobs: state.jobs.map((j) =>
+                    j.id === id ? {...j, description: data.job.description} : j
+                ),
+            }))
         } catch (error) {
             set({error: (error as Error).message})
             throw error
