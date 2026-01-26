@@ -73,6 +73,7 @@ GET /api/jobs
             "status": "new",
             "posted_date": "2026-01-15",
             "source": "LinkedIn",
+            "provider": "serpapi",
             "fetched_at": "2026-01-20T10:00:00.000Z",
             "analysis": {
                 "match_score": 85,
@@ -182,7 +183,8 @@ POST /api/profiles
     "keywords": "QA Automation Engineer, SDET, Test Automation",
     "location": "Tel Aviv, Israel",
     "date_posted": "week", // REQUIRED: today, 3days, week, month
-    "radius": 50 // km (optional)
+    "radius": 50, // km (optional)
+    "preferred_provider": "serpapi" // optional: serpapi, glassdoor (null = auto)
 }
 ```
 
@@ -263,7 +265,8 @@ POST /api/search/run
 ```json
 {
     "profileId": "uuid",
-    "analyzeWithAI": true // optional, default: false
+    "analyzeWithAI": true, // optional, default: false
+    "provider": "glassdoor" // optional override
 }
 ```
 

@@ -1,208 +1,175 @@
-import {getJson, config} from 'serpapi'
-import {SearchProfile, JobInput, SearchResult} from '@yshvydak-job-screener/shared'
+import {
+    SearchProfile,
+    JobInput,
+    SearchResult,
+    JobProvider,
+    ProviderStatus,
+    ProviderTestResult,
+} from '@yshvydak-job-screener/shared'
 import {JobRepository} from '../repositories/job.repository'
 import {ProfileRepository} from '../repositories/profile.repository'
+import {ProviderRegistry, ProviderJobResult, IJobSearchProvider} from '../providers'
 import {Logger} from '../utils/Logger'
-import {env} from '../config/environment.config'
 
 /**
- * SerpAPI Google Jobs response types
+ * Extended search result with provider info
  */
-interface SerpAPIJobResult {
-    job_id: string
-    title: string
-    company_name?: string
-    location?: string
-    description?: string
-    snippet?: string // Alternative description field
-    share_link?: string
-    detected_extensions?: {
-        posted_at?: string
-        schedule_type?: string
-    }
-    apply_options?: Array<{
-        title: string
-        link: string
-    }>
-    via?: string
-    extensions?: string[] // Array of metadata strings
-}
-
-interface SerpAPIResponse {
-    jobs_results?: SerpAPIJobResult[]
-    error?: string
+export interface ExtendedSearchResult extends SearchResult {
+    provider: JobProvider
 }
 
 /**
- * Service for SerpAPI job search integration
+ * Service for job search across multiple providers
  */
 export class SearchService {
     constructor(
         private jobRepository: JobRepository,
-        private profileRepository: ProfileRepository
-    ) {
-        // Configure SerpAPI with API key
-        if (env.SERPAPI_KEY) {
-            config.api_key = env.SERPAPI_KEY
-        }
-    }
+        private profileRepository: ProfileRepository,
+        private providerRegistry: ProviderRegistry
+    ) {}
 
     /**
      * Execute a job search using a profile
+     * @param profileId - Profile to use for search parameters
+     * @param providerOverride - Optional provider to use instead of profile preference
      */
-    async executeSearch(profileId: string): Promise<SearchResult> {
+    async executeSearch(
+        profileId: string,
+        providerOverride?: JobProvider
+    ): Promise<ExtendedSearchResult> {
         // Get the search profile
         const profile = this.profileRepository.findById(profileId)
         if (!profile) {
             throw new Error(`Profile not found: ${profileId}`)
         }
 
-        if (!env.SERPAPI_KEY) {
-            throw new Error('SERPAPI_KEY is not configured')
-        }
+        // Select provider
+        const provider = this.selectProvider(profile, providerOverride)
 
         Logger.info('Starting job search', {
             profileId,
+            provider: provider.name,
             keywords: profile.keywords,
             location: profile.location,
         })
 
-        // Build SerpAPI parameters
-        const params = this.buildSearchParams(profile)
-
-        Logger.info('SerpAPI request params', params)
-
-        // Fetch jobs from SerpAPI
-        const response = await this.fetchJobs(params)
-
-        // Handle "no results" as valid response, not error
-        if (response.error) {
-            const isNoResults = response.error.toLowerCase().includes("hasn't returned any results")
-            if (isNoResults) {
-                Logger.info('No jobs found for this query')
-                return {
-                    jobsFound: 0,
-                    newJobs: 0,
-                    analyzed: false,
-                }
-            }
-            throw new Error(`SerpAPI error: ${response.error}`)
+        // Build common search params from profile
+        const params = {
+            keywords: profile.keywords,
+            location: profile.location || undefined,
+            date_posted: profile.date_posted || undefined,
+            radius: profile.radius || undefined,
         }
 
-        const jobs = response.jobs_results || []
-        Logger.info(`Fetched ${jobs.length} jobs from SerpAPI`)
+        // Execute search via provider
+        const result = await provider.search(params)
+
+        Logger.info(`Fetched ${result.jobs.length} jobs from ${provider.name}`)
 
         // Save jobs (preventing duplicates)
-        const {saved, duplicates} = await this.saveJobs(jobs, profileId)
+        const {saved, duplicates} = await this.saveJobs(result.jobs, profileId, provider.name)
 
         Logger.success('Search completed', {
             profileId,
-            total: jobs.length,
+            provider: provider.name,
+            total: result.jobs.length,
             saved,
             duplicates,
         })
 
         return {
-            jobsFound: jobs.length,
+            jobsFound: result.jobs.length,
             newJobs: saved,
-            analyzed: false, // AI analysis is separate
+            analyzed: false,
+            provider: provider.name,
         }
     }
 
     /**
-     * Build SerpAPI search parameters from profile
+     * Get available providers
      */
-    private buildSearchParams(profile: SearchProfile): Record<string, string> {
-        const params: Record<string, string> = {
-            engine: 'google_jobs',
-            q: profile.keywords,
-            hl: 'en', // English results
+    getAvailableProviders(): ProviderStatus[] {
+        return this.providerRegistry.getStatus()
+    }
+
+    /**
+     * Test a specific provider connection
+     */
+    async testProvider(providerName: JobProvider): Promise<ProviderTestResult> {
+        const provider = this.providerRegistry.get(providerName)
+        if (!provider) {
+            return {ok: false, error: `Provider '${providerName}' not found`}
         }
+        if (!provider.isAvailable()) {
+            return {ok: false, error: `Provider '${providerName}' is not configured`}
+        }
+        return provider.testConnection()
+    }
 
-        // Add location only if provided (optional for global search)
-        if (profile.location && profile.location.trim()) {
-            params.location = profile.location
+    /**
+     * Select provider based on profile preference and override
+     */
+    private selectProvider(profile: SearchProfile, override?: JobProvider): IJobSearchProvider {
+        // Priority: 1. Override param, 2. Profile preference, 3. First available
+        const providerName = override || profile.preferred_provider
 
-            // Add radius filter only when location is specified (SerpAPI uses miles)
-            if (profile.radius) {
-                // Convert km to miles (approximate)
-                const radiusMiles = Math.round(profile.radius * 0.621371)
-                params.lrad = String(radiusMiles)
+        if (providerName) {
+            const provider = this.providerRegistry.get(providerName)
+            if (provider?.isAvailable()) {
+                return provider
             }
+            Logger.warn(`Requested provider '${providerName}' not available, using fallback`)
         }
 
-        // Add date filter using chips parameter
-        if (profile.date_posted) {
-            params.chips = `date_posted:${profile.date_posted}`
+        // Fall back to first available
+        const available = this.providerRegistry.getFirstAvailable()
+        if (!available) {
+            throw new Error(
+                'No job search providers available. Configure at least one provider API key.'
+            )
         }
 
-        return params
-    }
-
-    /**
-     * Fetch jobs from SerpAPI
-     */
-    private async fetchJobs(params: Record<string, string>): Promise<SerpAPIResponse> {
-        try {
-            const response = await getJson(params)
-            return response as SerpAPIResponse
-        } catch (error) {
-            Logger.error('SerpAPI fetch failed', error)
-            throw error
-        }
+        return available
     }
 
     /**
      * Save jobs to database (preventing duplicates)
-     * ⚠️ CRITICAL: Uses findBySerpAPIId() before create() to prevent duplicates
+     * Uses provider + provider_job_id for deduplication
      */
     private async saveJobs(
-        jobs: SerpAPIJobResult[],
-        profileId: string
+        jobs: ProviderJobResult[],
+        profileId: string,
+        provider: JobProvider
     ): Promise<{saved: number; duplicates: number}> {
         let saved = 0
         let duplicates = 0
 
         for (const job of jobs) {
-            const resolvedJobId =
-                job.job_id?.trim() ||
-                job.share_link?.trim() ||
-                job.apply_options?.[0]?.link?.trim() ||
-                `fallback:${[
-                    job.title,
-                    job.company_name,
-                    job.location,
-                    job.detected_extensions?.posted_at,
-                ]
-                    .filter(Boolean)
-                    .join('|')}`
-
-            // ⚠️ CRITICAL: Check for existing job by SerpAPI ID
-            const existing = this.jobRepository.findBySerpAPIId(resolvedJobId)
+            // Check for existing job by provider and job ID
+            const existing = this.jobRepository.findByProviderJobId(provider, job.provider_job_id)
 
             if (existing) {
                 duplicates++
-                Logger.debug('Skipping duplicate job', {serpapi_job_id: job.job_id})
+                Logger.debug('Skipping duplicate job', {
+                    provider,
+                    provider_job_id: job.provider_job_id,
+                })
                 continue
             }
 
-            // Get the first apply link if available
-            const applyLink = job.apply_options?.[0]?.link || job.share_link
-
-            // Extract description from available fields
-            // SerpAPI may provide description in different fields
-            const description = job.description || job.snippet || undefined
-
             const jobInput: JobInput = {
                 profile_id: profileId,
-                serpapi_job_id: resolvedJobId,
+                provider: provider,
+                provider_job_id: job.provider_job_id,
+                // Keep serpapi_job_id for backward compatibility during migration
+                serpapi_job_id: provider === 'serpapi' ? job.provider_job_id : undefined,
                 title: job.title,
-                company: job.company_name,
+                company: job.company,
                 location: job.location,
-                description: description,
-                apply_link: applyLink,
-                posted_date: job.detected_extensions?.posted_at,
-                source: job.via,
+                description: job.description,
+                apply_link: job.apply_link,
+                posted_date: job.posted_date,
+                source: job.source,
             }
 
             this.jobRepository.create(jobInput)

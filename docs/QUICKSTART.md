@@ -10,6 +10,7 @@ Get YShvydak Job Screener running in 5 minutes.
 - **npm** 10+ (comes with Node.js)
 - **SerpAPI Key** ([get free key](https://serpapi.com/users/sign_up))
 - **Google Gemini API Key** ([get free key](https://ai.google.dev/))
+- **Glassdoor Key** (Optional)
 
 ---
 
@@ -53,6 +54,9 @@ DATABASE_PATH=./data/jobs.db
 # API Keys (REQUIRED)
 SERPAPI_KEY=your_serpapi_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# Provider Keys (OPTIONAL)
+GLASSDOOR_KEY=your_glassdoor_key
 
 # Frontend Configuration
 VITE_PORT=3000

@@ -13,7 +13,7 @@
 
 **Mandatory Flow:** Controller → Service → Repository → Database
 
-```
+```plaintext
 packages/server/src/
 ├── controllers/     # HTTP handlers (thin layer)
 ├── services/        # Business logic + External API calls
@@ -75,13 +75,23 @@ if (!existing) {
 }
 ```
 
+### 5. Context7-MCP Integration - MANDATORY for Dependencies
+
+**ALWAYS check before dependency changes:**
+
+- Adding package? → Check Context7-MCP first
+- Updating package? → Check Context7-MCP first
+- Changing config? → Check Context7-MCP first
+
+**Why:** Context7-MCP provides package documentation and compatibility info to prevent breaking changes.
+
 ---
 
 ## Project Structure
 
 ### Backend (Express + SQLite)
 
-```
+```plaintext
 packages/server/src/
 ├── index.ts                    # Entry point + Express setup
 ├── config/
@@ -113,7 +123,7 @@ packages/server/src/
 
 ### Frontend (React + Zustand)
 
-```
+```plaintext
 packages/web/src/
 ├── App.tsx                     # Main app with routing
 ├── main.tsx                    # Entry point
@@ -134,7 +144,7 @@ packages/web/src/
 
 ### Shared Types
 
-```
+```plaintext
 shared/src/
 ├── index.ts
 └── types/
@@ -165,11 +175,24 @@ npm run lint:fix
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:3001`
 
+### Production Deployment
+
+Project is deployed on **Raspberry Pi** with auto-deploy on push to `main`.
+
+**Key Info:**
+
+- CI/CD: GitHub Actions → Raspberry Pi
+- See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
+    - Production URLs
+    - Deployment troubleshooting
+    - SSH access
+    - Service management
+
 ---
 
 ## Concept Flow
 
-```
+```plaintext
 User clicks "Run Search" on profile
   ↓ Frontend: POST /api/search/run
   ↓ SearchController → SearchService
@@ -265,6 +288,7 @@ service.create({
 
 ### DO
 
+✅ Use Context7-MCP for all dependency lookups
 ✅ Follow Layered Architecture (Controller → Service → Repository)
 ✅ Check `serpapi_job_id` before job insert
 ✅ Use environment variables for API keys
@@ -282,7 +306,7 @@ service.create({
 ❌ NEVER require location (it's optional)
 ❌ NEVER skip duplicate checking for jobs
 ❌ NEVER commit without explicit user request
-❌ NEVER add dependencies without checking compatibility
+❌ NEVER add dependencies without Context7-MCP check
 ❌ NEVER make database schema changes without migration plan
 
 ---

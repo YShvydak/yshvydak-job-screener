@@ -37,6 +37,9 @@ import {JobService} from '../../services/job.service'
 import {SearchService} from '../../services/search.service'
 import {AIService} from '../../services/ai.service'
 
+// Providers
+import {ProviderRegistry, SerpAPIProvider, GlassdoorProvider} from '../../providers'
+
 // Controllers
 import {ProfileController} from '../../controllers/profile.controller'
 import {JobController} from '../../controllers/job.controller'
@@ -97,10 +100,15 @@ export async function setupTestServer(): Promise<TestServerInstance> {
     const analysisRepository = new AnalysisRepository(db)
     const settingsRepository = new SettingsRepository(db)
 
+    // Initialize Provider Registry (with empty keys for testing)
+    const providerRegistry = new ProviderRegistry()
+    providerRegistry.register(new SerpAPIProvider({apiKey: ''}))
+    providerRegistry.register(new GlassdoorProvider({apiKey: ''}))
+
     // Initialize Services
     const profileService = new ProfileService(profileRepository)
     const jobService = new JobService(jobRepository)
-    const searchService = new SearchService(jobRepository, profileRepository)
+    const searchService = new SearchService(jobRepository, profileRepository, providerRegistry)
     const aiService = new AIService(analysisRepository, jobRepository, settingsRepository)
 
     // Initialize Controllers

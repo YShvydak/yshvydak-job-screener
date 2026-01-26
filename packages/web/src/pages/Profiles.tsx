@@ -1,5 +1,10 @@
 import {useEffect, useState} from 'react'
-import {SearchProfile, SearchProfileInput, DatePosted} from '@yshvydak-job-screener/shared'
+import {
+    SearchProfile,
+    SearchProfileInput,
+    DatePosted,
+    JobProvider,
+} from '@yshvydak-job-screener/shared'
 import {useProfileStore} from '../stores/profileStore'
 
 const DATE_POSTED_OPTIONS: {value: DatePosted; label: string}[] = [
@@ -14,7 +19,9 @@ export function Profiles() {
         profiles,
         loading,
         error,
+        providers,
         fetchProfiles,
+        fetchProviders,
         createProfile,
         updateProfile,
         toggleProfile,
@@ -27,12 +34,13 @@ export function Profiles() {
 
     useEffect(() => {
         fetchProfiles()
+        fetchProviders()
     }, [])
 
-    const handleRunSearch = async (profileId: string) => {
+    const handleRunSearch = async (profileId: string, provider?: JobProvider) => {
         setSearchingId(profileId)
         try {
-            const result = await runSearch(profileId)
+            const result = await runSearch(profileId, provider)
             alert(`Found ${result.jobsFound} jobs, ${result.newJobs} new`)
         } catch (err) {
             alert('Search failed: ' + (err as Error).message)
@@ -64,6 +72,7 @@ export function Profiles() {
             {/* Create Form */}
             {isCreating && (
                 <ProfileForm
+                    providers={providers}
                     onSubmit={async (input) => {
                         await createProfile(input)
                         setIsCreating(false)
@@ -79,6 +88,7 @@ export function Profiles() {
                         <ProfileForm
                             key={profile.id}
                             initialData={profile}
+                            providers={providers}
                             onSubmit={async (input) => {
                                 await updateProfile(profile.id, input)
                                 setEditingId(null)
@@ -89,6 +99,7 @@ export function Profiles() {
                         <ProfileCard
                             key={profile.id}
                             profile={profile}
+                            providers={providers}
                             isSearching={searchingId === profile.id}
                             onEdit={() => setEditingId(profile.id)}
                             onToggle={() => toggleProfile(profile.id)}
@@ -97,7 +108,7 @@ export function Profiles() {
                                     deleteProfile(profile.id)
                                 }
                             }}
-                            onRunSearch={() => handleRunSearch(profile.id)}
+                            onRunSearch={(provider) => handleRunSearch(profile.id, provider)}
                         />
                     )
                 )}
@@ -119,6 +130,7 @@ export function Profiles() {
 
 function ProfileCard({
     profile,
+    providers,
     isSearching,
     onEdit,
     onToggle,
@@ -126,12 +138,14 @@ function ProfileCard({
     onRunSearch,
 }: {
     profile: SearchProfile
+    providers: {name: JobProvider; displayName: string; available: boolean}[]
     isSearching: boolean
     onEdit: () => void
     onToggle: () => void
     onDelete: () => void
-    onRunSearch: () => void
+    onRunSearch: (provider?: JobProvider) => Promise<void>
 }) {
+    const [showProviderMenu, setShowProviderMenu] = useState(false)
     const isActive = profile.active === 1
 
     return (
@@ -168,15 +182,48 @@ function ProfileCard({
                             }
                         </p>
                     )}
+                    {profile.preferred_provider && (
+                        <p className="text-sm text-gray-600">
+                            <span className="font-medium">Preferred provider:</span>{' '}
+                            {providers.find((p) => p.name === profile.preferred_provider)
+                                ?.displayName || profile.preferred_provider}
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex items-center space-x-2">
-                    <button
-                        onClick={onRunSearch}
-                        disabled={!isActive || isSearching}
-                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                        {isSearching ? 'Searching...' : 'Run Search'}
-                    </button>
+                    {/* Split-button for Run Search */}
+                    <div className="relative inline-flex">
+                        <button
+                            onClick={() => onRunSearch(profile.preferred_provider ?? undefined)}
+                            disabled={!isActive || isSearching}
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded-l-md hover:bg-blue-700 disabled:opacity-50">
+                            {isSearching ? 'Searching...' : 'Run Search'}
+                        </button>
+                        <button
+                            onClick={() => setShowProviderMenu(!showProviderMenu)}
+                            disabled={!isActive || isSearching}
+                            className="px-2 py-1 text-sm bg-blue-600 text-white border-l border-blue-500 rounded-r-md hover:bg-blue-700 disabled:opacity-50">
+                            ▼
+                        </button>
+                        {showProviderMenu && (
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[150px]">
+                                {providers
+                                    .filter((p) => p.available)
+                                    .map((provider) => (
+                                        <button
+                                            key={provider.name}
+                                            onClick={() => {
+                                                setShowProviderMenu(false)
+                                                onRunSearch(provider.name)
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            {provider.displayName}
+                                        </button>
+                                    ))}
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={onEdit}
                         className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800">
@@ -200,10 +247,12 @@ function ProfileCard({
 
 function ProfileForm({
     initialData,
+    providers,
     onSubmit,
     onCancel,
 }: {
     initialData?: SearchProfile
+    providers: {name: JobProvider; displayName: string; available: boolean}[]
     onSubmit: (input: SearchProfileInput) => Promise<void>
     onCancel: () => void
 }) {
@@ -212,6 +261,9 @@ function ProfileForm({
     const [location, setLocation] = useState(initialData?.location || '')
     const [datePosted, setDatePosted] = useState<DatePosted>(initialData?.date_posted || 'today')
     const [radius, setRadius] = useState(initialData?.radius?.toString() || '')
+    const [preferredProvider, setPreferredProvider] = useState<JobProvider | ''>(
+        initialData?.preferred_provider || ''
+    )
     const [submitting, setSubmitting] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -224,6 +276,7 @@ function ProfileForm({
                 location,
                 date_posted: datePosted,
                 radius: radius ? parseInt(radius, 10) : undefined,
+                preferred_provider: preferredProvider || undefined,
             })
         } finally {
             setSubmitting(false)
@@ -299,6 +352,25 @@ function ProfileForm({
                         placeholder="e.g., 50"
                     />
                 </div>
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700">
+                    Preferred Provider <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <select
+                    value={preferredProvider}
+                    onChange={(e) => setPreferredProvider(e.target.value as JobProvider | '')}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Auto (use any available)</option>
+                    {providers
+                        .filter((p) => p.available)
+                        .map((provider) => (
+                            <option key={provider.name} value={provider.name}>
+                                {provider.displayName}
+                            </option>
+                        ))}
+                </select>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">

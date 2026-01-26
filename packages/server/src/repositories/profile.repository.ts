@@ -48,8 +48,8 @@ export class ProfileRepository {
 
         const stmt = this.db.prepare(`
             INSERT INTO search_profiles (
-                id, name, keywords, location, date_posted, radius, active, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+                id, name, keywords, location, date_posted, radius, preferred_provider, active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         `)
 
         stmt.run(
@@ -59,6 +59,7 @@ export class ProfileRepository {
             input.location,
             input.date_posted || null,
             input.radius || null,
+            input.preferred_provider || null,
             now,
             now
         )
@@ -77,7 +78,7 @@ export class ProfileRepository {
 
         const stmt = this.db.prepare(`
             UPDATE search_profiles
-            SET name = ?, keywords = ?, location = ?, date_posted = ?, radius = ?, updated_at = ?
+            SET name = ?, keywords = ?, location = ?, date_posted = ?, radius = ?, preferred_provider = ?, updated_at = ?
             WHERE id = ?
         `)
 
@@ -87,6 +88,9 @@ export class ProfileRepository {
             input.location ?? existing.location,
             input.date_posted ?? existing.date_posted,
             input.radius ?? existing.radius,
+            input.preferred_provider !== undefined
+                ? input.preferred_provider
+                : existing.preferred_provider,
             now,
             id
         )

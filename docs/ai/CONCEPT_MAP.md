@@ -23,42 +23,35 @@ SearchService.runSearch(profileId)
   │   └─ ProfileRepository.findById(profileId)
   │       └─ SELECT * FROM search_profiles WHERE id = ?
   │
-  ├─→ Step 2: Build SerpAPI Parameters
-  │   └─ buildSearchParams(profile)
-  │       ├─ ALWAYS include:
-  │       │   ├─ engine: "google_jobs"
-  │       │   ├─ q: profile.keywords (REQUIRED)
-  │       │   ├─ hl: "en" (English results)
-  │       │   └─ api_key: process.env.SERPAPI_KEY
-  │       │
-  │       └─ OPTIONAL (only if provided):
-  │           ├─ location: profile.location (if not empty)
-  │           ├─ lrad: radius in miles (only with location)
-  │           └─ chips: date_posted filter
+  ├─→ Step 2: Select Provider & Build Parameters
+  │   └─ ProviderRegistry.get(providerId)
+  │       ├─ Resolve provider (default: 'serpapi' or profile.preferred_provider)
+  │       └─ provider.buildParams(profile)
   │
-  ├─→ Step 3: Call SerpAPI
-  │   └─ fetchFromSerpAPI(params)
-  │       ├─ fetch("https://serpapi.com/search?...")
-  │       ├─ Handle "no results" as valid response (return [])
-  │       └─ Return jobs_results array
+  ├─→ Step 3: Execute Provider Search
+  │   └─ provider.search()
+  │       ├─ Call external API (SerpAPI, Glassdoor, etc.)
+  │       ├─ Normalize results to common Job format
+  │       └─ Return standardized jobs array
   │
   ├─→ Step 4: Save Jobs (Prevent Duplicates)
-  │   └─ For each SerpAPI job result:
-  │       ├─ Check: JobRepository.findBySerpAPIId(result.job_id)
+  │   └─ For each job result:
+  │       ├─ Check: JobRepository.findByProviderJobId(provider, providerJobId)
   │       ├─ If NOT exists:
   │       │   └─ JobRepository.create({
-  │       │       serpapi_job_id: result.job_id,
+  │       │       provider: 'serpapi',
+  │       │       provider_job_id: 'external_id',
   │       │       profile_id: profileId,
   │       │       title: result.title,
-  │       │       company: result.company_name,
+  │       │       company: result.company,
   │       │       location: result.location,
   │       │       description: result.description,
-  │       │       apply_link: result.apply_options[0]?.link,
-  │       │       posted_date: result.detected_extensions?.posted_at,
-  │       │       source: result.via,
+  │       │       apply_link: result.apply_link,
+  │       │       posted_date: result.posted_date,
+  │       │       source: result.source,
   │       │       status: 'new'
   │       │     })
-  │       └─ If EXISTS: Skip (already in database)
+  │       └─ If EXISTS: Skip (already in database for this provider)
   │
   └─→ Return: { jobsFound, newJobs, analyzed: false }
   ↓
@@ -213,11 +206,9 @@ Frontend: Show success message
 
 ```
 Job Search Flow Dependencies:
-├─ SerpAPI integration
-│   ├─ Keywords (REQUIRED)
-│   ├─ Location (OPTIONAL - empty = global)
-│   └─ hl='en' (ALWAYS)
-├─ Job deduplication ← serpapi_job_id uniqueness
+├─ Provider Integration (SerpAPI/Glassdoor)
+│   └─ Standardized via ProviderRegistry
+├─ Job deduplication ← provider + provider_job_id uniqueness
 └─ Optional AI analysis ← CV content from settings
 
 AI Analysis Dependencies:
@@ -226,7 +217,7 @@ AI Analysis Dependencies:
 └─ Job details ← Jobs table
 
 Data Integrity Dependencies:
-├─ Job uniqueness ← UNIQUE constraint on serpapi_job_id
+├─ Job uniqueness ← UNIQUE constraint on provider + provider_job_id
 ├─ One analysis per job ← UNIQUE constraint on job_id
 └─ Profile-job relationship ← Foreign key jobs.profile_id
 ```
@@ -256,12 +247,12 @@ Frontend (React + Zustand)
     ↓ REST API (localhost:3000 → localhost:3001)
 Backend (Express)
     ↓
-    ├─→ SerpAPI (Job Search)
-    │   ├─ Endpoint: https://serpapi.com/search
-    │   ├─ Engine: google_jobs
-    │   ├─ Required: q (keywords), hl (language)
-    │   ├─ Optional: location, lrad (radius)
-    │   └─ Returns: jobs_results[] or "no results" message
+    ├─→ Job Search Providers (Strategy Pattern)
+    │   ├─ SerpAPI (Google Jobs)
+    │   │   └─ Engine: google_jobs
+    │   ├─ Glassdoor (Scraping/API)
+    │   │   └─ Fallback logic
+    │   └─ Returns: Standardized Job[]
     │
     ├─→ Google Gemini AI (Job Analysis)
     │   ├─ Package: @google/generative-ai

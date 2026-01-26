@@ -27,8 +27,14 @@ packages/server/src/
 ├── services/                    # Business logic
 │   ├── job.service.ts           # Job management, status updates
 │   ├── profile.service.ts       # Profile CRUD, validation
-│   ├── search.service.ts        # SerpAPI integration, job fetching
+│   ├── search.service.ts        # Orchestration of search providers
 │   └── ai.service.ts            # Gemini AI analysis
+│
+├── providers/                   # Job Search Providers (Strategy Pattern)
+│   ├── base.provider.ts         # Provider interface
+│   ├── provider.registry.ts     # Registry for provider selection
+│   ├── serpapi.provider.ts      # Google Jobs via SerpAPI
+│   └── glassdoor.provider.ts    # Glassdoor scraping/API logic
 │
 ├── repositories/                # Data access (SQL only)
 │   ├── job.repository.ts        # Jobs CRUD + findBySerpAPIId()
@@ -138,7 +144,8 @@ packages/web:
 | Add database query    | `packages/server/src/repositories/`                  |
 | Add new page          | `packages/web/src/pages/`                            |
 | Add state management  | `packages/web/src/stores/`                           |
-| SerpAPI integration   | `packages/server/src/services/search.service.ts`     |
+| SerpAPI integration   | `packages/server/src/providers/serpapi.provider.ts`  |
+| Add job provider      | `packages/server/src/providers/`                     |
 | Gemini AI integration | `packages/server/src/services/ai.service.ts`         |
 | Job deduplication     | `packages/server/src/repositories/job.repository.ts` |
 | Database schema       | `packages/server/src/database/schema.sql`            |

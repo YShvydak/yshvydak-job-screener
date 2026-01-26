@@ -19,6 +19,9 @@ class EnvironmentConfig {
     public readonly SERPAPI_KEY: string
     public readonly GEMINI_API_KEY: string
 
+    // Job Search Providers (Optional)
+    public readonly GLASSDOOR_KEY: string
+
     constructor() {
         // Server configuration
         this.PORT = parseInt(process.env.PORT || '3001', 10)
@@ -30,6 +33,9 @@ class EnvironmentConfig {
         // API Keys (REQUIRED)
         this.SERPAPI_KEY = process.env.SERPAPI_KEY || ''
         this.GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
+
+        // Job Search Providers (Optional)
+        this.GLASSDOOR_KEY = process.env.GLASSDOOR_KEY || ''
 
         // Validate configuration
         this.validate()

@@ -41,7 +41,7 @@ describe('Search API Integration', () => {
 
         const executeSpy = vi
             .spyOn(server.services.search, 'executeSearch')
-            .mockResolvedValue({jobsFound: 2, newJobs: 1, analyzed: false})
+            .mockResolvedValue({jobsFound: 2, newJobs: 1, analyzed: false, provider: 'serpapi'})
 
         const response = await request(server.app)
             .post('/api/search/run')
@@ -50,7 +50,7 @@ describe('Search API Integration', () => {
 
         expect(response.body.success).toBe(true)
         expect(response.body.data.result.jobsFound).toBe(2)
-        expect(executeSpy).toHaveBeenCalledWith(fixtures.profile.id)
+        expect(executeSpy).toHaveBeenCalledWith(fixtures.profile.id, undefined)
     })
 
     it('POST /api/search/run should return error when service fails', async () => {

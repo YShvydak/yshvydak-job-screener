@@ -54,6 +54,8 @@ describe('AIService', () => {
     const job: Job = {
         id: 'job-1',
         profile_id: 'profile-1',
+        provider: 'serpapi',
+        provider_job_id: 'serp_1',
         serpapi_job_id: 'serp_1',
         title: 'Senior Engineer',
         company: 'Test Co',

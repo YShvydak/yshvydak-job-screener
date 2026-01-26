@@ -1,22 +1,36 @@
 import {create} from 'zustand'
-import {SearchProfile, SearchProfileInput} from '@yshvydak-job-screener/shared'
+import {
+    SearchProfile,
+    SearchProfileInput,
+    JobProvider,
+    ProviderStatus,
+} from '@yshvydak-job-screener/shared'
 import * as api from '../api/client'
+
+interface SearchResult {
+    jobsFound: number
+    newJobs: number
+    provider?: JobProvider
+}
 
 interface ProfileState {
     profiles: SearchProfile[]
+    providers: ProviderStatus[]
     loading: boolean
     error: string | null
     // Actions
     fetchProfiles: () => Promise<void>
+    fetchProviders: () => Promise<void>
     createProfile: (input: SearchProfileInput) => Promise<SearchProfile>
     updateProfile: (id: string, input: Partial<SearchProfileInput>) => Promise<void>
     toggleProfile: (id: string) => Promise<void>
     deleteProfile: (id: string) => Promise<void>
-    runSearch: (profileId: string) => Promise<{jobsFound: number; newJobs: number}>
+    runSearch: (profileId: string, provider?: JobProvider) => Promise<SearchResult>
 }
 
 export const useProfileStore = create<ProfileState>()((set) => ({
     profiles: [],
+    providers: [],
     loading: false,
     error: null,
 
@@ -27,6 +41,15 @@ export const useProfileStore = create<ProfileState>()((set) => ({
             set({profiles: data.profiles, loading: false})
         } catch (error) {
             set({error: (error as Error).message, loading: false})
+        }
+    },
+
+    fetchProviders: async () => {
+        try {
+            const data = await api.get<{providers: ProviderStatus[]}>('/search/providers')
+            set({providers: data.providers})
+        } catch (error) {
+            console.error('Failed to fetch providers:', error)
         }
     },
 
@@ -83,13 +106,13 @@ export const useProfileStore = create<ProfileState>()((set) => ({
         }
     },
 
-    runSearch: async (profileId) => {
+    runSearch: async (profileId, provider) => {
         set({loading: true, error: null})
         try {
-            const data = await api.post<{result: {jobsFound: number; newJobs: number}}>(
-                '/search/run',
-                {profileId}
-            )
+            const data = await api.post<{result: SearchResult}>('/search/run', {
+                profileId,
+                provider,
+            })
             set({loading: false})
             return data.result
         } catch (error) {
