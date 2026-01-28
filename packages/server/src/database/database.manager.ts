@@ -36,98 +36,19 @@ export class DatabaseManager {
      */
     private initSchema(): void {
         const schemaPath = path.join(__dirname, 'schema.sql')
+        if (!fs.existsSync(schemaPath)) {
+            console.error('❌ Schema file not found:', schemaPath)
+            throw new Error('Database schema file missing')
+        }
+
         const schema = fs.readFileSync(schemaPath, 'utf8')
 
         try {
-            // Attempt 1: Execute schema directly
-            // On a new DB, this works perfectly.
-            // On an old DB, this might fail if CREATE INDEX references missing columns that migrations haven't added yet.
             this.db.exec(schema)
+            console.log('✅ Database schema initialized')
         } catch (error) {
-            // If schema fails, it's likely due to missing columns on an existing DB.
-            // We ignore this error and proceed to migrations, which should fix the structure.
-            const errorMessage = error instanceof Error ? error.message : String(error)
-            console.warn(
-                `⚠️  Initial schema verification needed migrations (${errorMessage}). Proceeding...`
-            )
-        }
-
-        // Run migrations for existing databases
-        // This adds missing columns (like 'provider') referenced by the schema indexes
-        this.runMigrations()
-
-        // Attempt 2: Re-run schema to ensure all objects (indexes, views, etc.) are created
-        // Now that migrations have run, this should succeed even on old databases.
-        try {
-            this.db.exec(schema)
-        } catch (error) {
-            // If it still fails, we have a real problem
-            console.error('❌ Final schema execution failed:', error)
+            console.error('❌ Database schema execution failed:', error)
             throw error
-        }
-
-        console.log('✅ Database schema initialized')
-    }
-
-    /**
-     * Run migrations for existing databases
-     */
-    private runMigrations(): void {
-        // Create migrations tracking table if not exists
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE,
-                executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `)
-
-        const migrationsDir = path.join(__dirname, 'migrations')
-        if (!fs.existsSync(migrationsDir)) {
-            return
-        }
-
-        const files = fs
-            .readdirSync(migrationsDir)
-            .filter((f) => f.endsWith('.sql'))
-            .sort()
-
-        for (const file of files) {
-            // Check if migration already executed
-            const executed = this.db
-                .prepare('SELECT 1 FROM schema_migrations WHERE name = ?')
-                .get(file)
-
-            if (executed) {
-                continue
-            }
-
-            console.log(`🔄 Running migration: ${file}`)
-
-            try {
-                const migrationPath = path.join(migrationsDir, file)
-                const migration = fs.readFileSync(migrationPath, 'utf8')
-
-                // Execute migration
-                this.db.exec(migration)
-
-                // Mark as executed
-                this.db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file)
-
-                console.log(`✅ Migration completed: ${file}`)
-            } catch (error) {
-                // Some migrations may fail if columns already exist (that's ok)
-                const errorMessage = error instanceof Error ? error.message : String(error)
-                if (errorMessage.includes('duplicate column name')) {
-                    console.log(`⏭️ Migration skipped (already applied): ${file}`)
-                    this.db
-                        .prepare('INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)')
-                        .run(file)
-                } else {
-                    console.error(`❌ Migration failed: ${file}`, error)
-                    throw error
-                }
-            }
         }
     }
 

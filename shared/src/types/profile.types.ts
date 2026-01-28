@@ -10,6 +10,7 @@ export type DatePosted = 'today' | '3days' | 'week' | 'month'
  */
 export interface SearchProfile {
     id: string
+    user_id: string
     name: string
     keywords: string
     location: string

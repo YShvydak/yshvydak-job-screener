@@ -13,7 +13,7 @@ export function Dashboard() {
         fetchStats()
         fetchProfiles()
         fetchCV()
-    }, [])
+    }, [fetchStats, fetchProfiles, fetchCV])
 
     const activeProfiles = profiles.filter((p) => p.active === 1)
 

@@ -15,6 +15,7 @@ export class JobController {
      */
     getAll = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const filters: JobFilters = {}
 
             if (req.query.status) {
@@ -34,8 +35,8 @@ export class JobController {
             const includeAnalysis = req.query.includeAnalysis === 'true'
 
             const jobs = includeAnalysis
-                ? this.jobService.getAllWithAnalysis(filters)
-                : this.jobService.getAll(filters)
+                ? this.jobService.getAllWithAnalysis(userId, filters)
+                : this.jobService.getAll(userId, filters)
 
             ResponseHelper.success(res, {jobs})
         } catch (error) {
@@ -47,9 +48,10 @@ export class JobController {
      * GET /api/jobs/stats
      * Get job statistics by status
      */
-    getStats = (_req: Request, res: Response): void => {
+    getStats = (req: Request, res: Response): void => {
         try {
-            const stats = this.jobService.getStats()
+            const userId = req.user!.id
+            const stats = this.jobService.getStats(userId)
             ResponseHelper.success(res, {stats})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -62,8 +64,9 @@ export class JobController {
      */
     getById = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
-            const job = this.jobService.getById(id)
+            const job = this.jobService.getById(id, userId)
 
             if (!job) {
                 ResponseHelper.notFound(res, 'Job not found')
@@ -82,6 +85,7 @@ export class JobController {
      */
     updateStatus = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
             const {status} = req.body
 
@@ -90,7 +94,7 @@ export class JobController {
                 return
             }
 
-            const job = this.jobService.updateStatus(id, status)
+            const job = this.jobService.updateStatus(id, status, userId)
             ResponseHelper.success(res, {job})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -103,6 +107,7 @@ export class JobController {
      */
     updateDescription = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
             const {description} = req.body
 
@@ -111,7 +116,7 @@ export class JobController {
                 return
             }
 
-            const job = this.jobService.updateDescription(id, description)
+            const job = this.jobService.updateDescription(id, description, userId)
             ResponseHelper.success(res, {job})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -124,8 +129,9 @@ export class JobController {
      */
     delete = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
-            this.jobService.delete(id)
+            this.jobService.delete(id, userId)
             ResponseHelper.success(res, {message: 'Job deleted successfully'})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -136,9 +142,10 @@ export class JobController {
      * DELETE /api/jobs
      * Delete all jobs
      */
-    clearAll = (_req: Request, res: Response): void => {
+    clearAll = (req: Request, res: Response): void => {
         try {
-            const deletedCount = this.jobService.clearAll()
+            const userId = req.user!.id
+            const deletedCount = this.jobService.clearAll(userId)
             ResponseHelper.success(res, {deletedCount})
         } catch (error) {
             ResponseHelper.error(res, error)

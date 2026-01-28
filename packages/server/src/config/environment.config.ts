@@ -22,6 +22,11 @@ class EnvironmentConfig {
     // Job Search Providers (Optional)
     public readonly GLASSDOOR_KEY: string
 
+    // Authentication
+    public readonly ENABLE_AUTH: boolean
+    public readonly JWT_SECRET: string
+    public readonly JWT_EXPIRES_IN: string
+
     constructor() {
         // Server configuration
         this.PORT = parseInt(process.env.PORT || '3001', 10)
@@ -36,6 +41,11 @@ class EnvironmentConfig {
 
         // Job Search Providers (Optional)
         this.GLASSDOOR_KEY = process.env.GLASSDOOR_KEY || ''
+
+        // Authentication
+        this.ENABLE_AUTH = process.env.ENABLE_AUTH === 'true'
+        this.JWT_SECRET = process.env.JWT_SECRET || ''
+        this.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d'
 
         // Validate configuration
         this.validate()

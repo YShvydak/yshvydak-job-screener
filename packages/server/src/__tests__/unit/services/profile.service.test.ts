@@ -19,9 +19,11 @@ describe('ProfileService', () => {
     } as unknown as ProfileRepository
 
     let service: ProfileService
+    const userId = 'test-user-id'
 
     const profile: SearchProfile = {
         id: 'profile-1',
+        user_id: userId,
         name: 'Test Profile',
         keywords: 'typescript',
         location: 'Remote',
@@ -40,72 +42,90 @@ describe('ProfileService', () => {
 
     it('should return all profiles', () => {
         profileRepository.findAll = vi.fn().mockReturnValue([profile])
-        const result = service.getAll()
+        const result = service.getAll(userId)
         expect(result).toHaveLength(1)
+        expect(profileRepository.findAll).toHaveBeenCalledWith(userId)
     })
 
     it('should return active profiles', () => {
         profileRepository.findActive = vi.fn().mockReturnValue([profile])
-        const result = service.getActive()
+        const result = service.getActive(userId)
         expect(result).toHaveLength(1)
+        expect(profileRepository.findActive).toHaveBeenCalledWith(userId)
     })
 
     it('should return profile by id', () => {
         profileRepository.findById = vi.fn().mockReturnValue(profile)
-        const result = service.getById(profile.id)
+        const result = service.getById(profile.id, userId)
         expect(result?.id).toBe(profile.id)
+        expect(profileRepository.findById).toHaveBeenCalledWith(profile.id, userId)
     })
 
     it('should validate input on create', () => {
         expect(() =>
-            service.create({name: '', keywords: 'react', location: '', date_posted: 'today'})
+            service.create(
+                {name: '', keywords: 'react', location: '', date_posted: 'today'},
+                userId
+            )
         ).toThrow('Profile name is required')
 
         expect(() =>
-            service.create({name: 'Test', keywords: '', location: '', date_posted: 'today'})
+            service.create({name: 'Test', keywords: '', location: '', date_posted: 'today'}, userId)
         ).toThrow('Keywords are required')
 
         expect(() =>
-            service.create({
-                name: 'Test',
-                keywords: 'react',
-                location: '',
-                date_posted: 'today',
-                radius: 600,
-            })
+            service.create(
+                {
+                    name: 'Test',
+                    keywords: 'react',
+                    location: '',
+                    date_posted: 'today',
+                    radius: 600,
+                },
+                userId
+            )
         ).toThrow('Radius must be between 0 and 500 km')
 
         expect(() =>
-            service.create({
-                name: 'Test',
-                keywords: 'react',
-                location: '',
-                date_posted: 'year' as any,
-            })
+            service.create(
+                {
+                    name: 'Test',
+                    keywords: 'react',
+                    location: '',
+                    date_posted: 'year' as any,
+                },
+                userId
+            )
         ).toThrow('Invalid date_posted value')
     })
 
     it('should require date_posted on create', () => {
         expect(() =>
-            service.create({
-                name: 'Test',
-                keywords: 'react',
-                location: '',
-                date_posted: undefined as any,
-            })
+            service.create(
+                {
+                    name: 'Test',
+                    keywords: 'react',
+                    location: '',
+                    date_posted: undefined as any,
+                },
+                userId
+            )
         ).toThrow('Date posted is required')
     })
 
     it('should create profile when input is valid', () => {
         profileRepository.create = vi.fn().mockReturnValue(profile)
 
-        const result = service.create({
-            name: profile.name,
-            keywords: profile.keywords,
-            location: profile.location,
-            date_posted: profile.date_posted || 'week',
-            radius: profile.radius ?? undefined,
-        })
+        const result = service.create(
+            {
+                name: profile.name,
+                keywords: profile.keywords,
+                location: profile.location,
+                date_posted: profile.date_posted || 'week',
+                radius: profile.radius ?? undefined,
+            },
+            userId
+        )
 
         expect(result).toBe(profile)
         expect(profileRepository.create).toHaveBeenCalled()
@@ -115,7 +135,7 @@ describe('ProfileService', () => {
         profileRepository.findById = vi.fn().mockReturnValue(profile)
         profileRepository.update = vi.fn().mockReturnValue({...profile, name: 'Updated'})
 
-        const result = service.update(profile.id, {name: 'Updated'})
+        const result = service.update(profile.id, {name: 'Updated'}, userId)
 
         expect(result.name).toBe('Updated')
     })
@@ -123,15 +143,21 @@ describe('ProfileService', () => {
     it('should throw when updating missing profile', () => {
         profileRepository.findById = vi.fn().mockReturnValue(null)
 
-        expect(() => service.update('missing', {name: 'Updated'})).toThrow('Profile not found')
+        expect(() => service.update('missing', {name: 'Updated'}, userId)).toThrow(
+            'Profile not found'
+        )
     })
 
     it('should validate update input when changing fields', () => {
         profileRepository.findById = vi.fn().mockReturnValue(profile)
 
-        expect(() => service.update(profile.id, {name: ''})).toThrow('Profile name is required')
-        expect(() => service.update(profile.id, {keywords: ''})).toThrow('Keywords are required')
-        expect(() => service.update(profile.id, {date_posted: 'invalid' as any})).toThrow(
+        expect(() => service.update(profile.id, {name: ''}, userId)).toThrow(
+            'Profile name is required'
+        )
+        expect(() => service.update(profile.id, {keywords: ''}, userId)).toThrow(
+            'Keywords are required'
+        )
+        expect(() => service.update(profile.id, {date_posted: 'invalid' as any}, userId)).toThrow(
             'Invalid date_posted value'
         )
     })
@@ -143,7 +169,7 @@ describe('ProfileService', () => {
             .fn()
             .mockReturnValue({...profileWithNullDate, name: 'Updated'})
 
-        const result = service.update(profile.id, {name: 'Updated'})
+        const result = service.update(profile.id, {name: 'Updated'}, userId)
 
         expect(result.name).toBe('Updated')
         // Should use 'today' as fallback when existing profile has null date_posted

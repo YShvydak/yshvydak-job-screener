@@ -33,6 +33,7 @@ describe('SearchService', () => {
     let profileRepository: ProfileRepository
     let searchService: SearchService
     let mockProviderRegistry: any
+    const userId = 'test-user-id'
 
     beforeEach(() => {
         // Use in-memory database
@@ -42,6 +43,12 @@ describe('SearchService', () => {
         const schemaPath = path.join(__dirname, '../../../database/schema.sql')
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         db.exec(schema)
+
+        // Create a test user
+        const now = new Date().toISOString()
+        db.prepare(
+            `INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+        ).run(userId, 'test@example.com', 'hash', now, now)
 
         // Initialize repositories
         jobRepository = new JobRepository(db)
@@ -56,6 +63,7 @@ describe('SearchService', () => {
         mockProviderRegistry = {
             getFirstAvailable: vi.fn().mockReturnValue(mockSerpAPIProvider),
             get: vi.fn().mockReturnValue(mockSerpAPIProvider),
+            getStatus: vi.fn().mockReturnValue([{name: 'serpapi', available: true}]),
         }
 
         searchService = new SearchService(jobRepository, profileRepository, mockProviderRegistry)
@@ -73,11 +81,12 @@ describe('SearchService', () => {
         const profile = {...fixtures.profile, ...data}
         db.prepare(
             `
-      INSERT INTO search_profiles (id, name, keywords, location, date_posted, radius, active)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO search_profiles (id, user_id, name, keywords, location, date_posted, radius, active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
         ).run(
             profile.id,
+            userId,
             profile.name,
             profile.keywords,
             profile.location,
@@ -109,7 +118,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            await searchService.executeSearch('profile-params')
+            await searchService.executeSearch('profile-params', userId)
 
             // Assert - check params passed to provider.search
             expect(mockProvider.search).toHaveBeenCalledWith({
@@ -127,9 +136,9 @@ describe('SearchService', () => {
     describe('executeSearch', () => {
         it('should throw error when profile not found', async () => {
             // Act & Assert
-            await expect(searchService.executeSearch('non-existent-profile')).rejects.toThrow(
-                'Profile not found'
-            )
+            await expect(
+                searchService.executeSearch('non-existent-profile', userId)
+            ).rejects.toThrow('Profile not found')
         })
 
         it('should return results with job count', async () => {
@@ -146,7 +155,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            const result = await searchService.executeSearch('profile-results')
+            const result = await searchService.executeSearch('profile-results', userId)
 
             // Assert
             expect(result.jobsFound).toBe(2)
@@ -165,7 +174,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            const result = await searchService.executeSearch('profile-empty')
+            const result = await searchService.executeSearch('profile-empty', userId)
 
             // Assert - should NOT throw, return 0 jobs
             expect(result.jobsFound).toBe(0)
@@ -180,7 +189,7 @@ describe('SearchService', () => {
             vi.mocked(mockProvider.search).mockRejectedValue(new Error('Provider failure'))
 
             // Act & Assert
-            await expect(searchService.executeSearch('profile-error')).rejects.toThrow(
+            await expect(searchService.executeSearch('profile-error', userId)).rejects.toThrow(
                 'Provider failure'
             )
         })
@@ -198,11 +207,12 @@ describe('SearchService', () => {
             const now = new Date().toISOString()
             db.prepare(
                 `
-        INSERT INTO jobs (id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, user_id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'existing-job',
+                userId,
                 'profile-dup',
                 'serpapi',
                 'job_123',
@@ -222,7 +232,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            const result = await searchService.executeSearch('profile-dup')
+            const result = await searchService.executeSearch('profile-dup', userId)
 
             // Assert - only 1 new job saved (the other was duplicate)
             expect(result.jobsFound).toBe(2)
@@ -247,7 +257,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            const result = await searchService.executeSearch('profile-new')
+            const result = await searchService.executeSearch('profile-new', userId)
 
             // Assert
             expect(result.jobsFound).toBe(2)
@@ -266,11 +276,12 @@ describe('SearchService', () => {
             const now = new Date().toISOString()
             db.prepare(
                 `
-        INSERT INTO jobs (id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 'new', ?, ?, ?)
+        INSERT INTO jobs (id, user_id, profile_id, provider, provider_job_id, title, status, fetched_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
       `
             ).run(
                 'job-serpapi',
+                userId,
                 'profile-multi',
                 'serpapi',
                 'job_shared',
@@ -294,7 +305,7 @@ describe('SearchService', () => {
             vi.mocked(mockProviderRegistry.get).mockReturnValue(mockGlassdoorProvider)
 
             // Act
-            const result = await searchService.executeSearch('profile-multi', 'glassdoor')
+            const result = await searchService.executeSearch('profile-multi', userId, 'glassdoor')
 
             // Assert - should be saved as a new job because provider is different
             expect(result.newJobs).toBe(1)
@@ -325,7 +336,7 @@ describe('SearchService', () => {
             })
 
             // Act
-            await searchService.executeSearch('profile-map')
+            await searchService.executeSearch('profile-map', userId)
 
             // Assert - verify field mapping
             const job = db
@@ -343,6 +354,7 @@ describe('SearchService', () => {
             expect(job.profile_id).toBe('profile-map')
             expect(job.status).toBe('new')
             expect(job.provider).toBe('serpapi')
+            expect(job.user_id).toBe(userId)
         })
     })
 })

@@ -29,12 +29,31 @@ export class ResponseHelper {
      */
     static error(res: Response, error: unknown, statusCode: number = 500, code?: string): Response {
         const message = error instanceof Error ? error.message : String(error)
+
+        let finalStatusCode = statusCode
+        let finalCode = code
+
+        // Automatically detect common error types from message if status is default 500
+        if (statusCode === 500) {
+            const lowerMessage = message.toLowerCase()
+            if (lowerMessage.includes('not found')) {
+                finalStatusCode = 404
+                finalCode = finalCode || 'NOT_FOUND'
+            } else if (
+                lowerMessage.includes('unauthorized') ||
+                lowerMessage.includes('authentication')
+            ) {
+                finalStatusCode = 401
+                finalCode = finalCode || 'UNAUTHORIZED'
+            }
+        }
+
         const response: APIErrorResponse = {
             success: false,
             error: message,
-            ...(code && {code}),
+            ...(finalCode && {code: finalCode}),
         }
-        return res.status(statusCode).json(response)
+        return res.status(finalStatusCode).json(response)
     }
 
     /**
@@ -52,10 +71,24 @@ export class ResponseHelper {
     }
 
     /**
+     * Send an unauthorized error (401)
+     */
+    static unauthorized(res: Response, message: string = 'Unauthorized'): Response {
+        return this.error(res, message, 401, 'UNAUTHORIZED')
+    }
+
+    /**
      * Send an internal server error (500)
      */
     static internal(res: Response, message: string = 'Internal Server Error'): Response {
         return this.error(res, message, 500, 'INTERNAL_ERROR')
+    }
+
+    /**
+     * Send a server error (500) - alias for internal
+     */
+    static serverError(res: Response, message: string = 'Server Error'): Response {
+        return this.internal(res, message)
     }
 
     /**

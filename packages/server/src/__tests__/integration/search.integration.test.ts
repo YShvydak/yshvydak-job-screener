@@ -50,7 +50,7 @@ describe('Search API Integration', () => {
 
         expect(response.body.success).toBe(true)
         expect(response.body.data.result.jobsFound).toBe(2)
-        expect(executeSpy).toHaveBeenCalledWith(fixtures.profile.id, undefined)
+        expect(executeSpy).toHaveBeenCalledWith(fixtures.profile.id, 'test-user-id', undefined)
     })
 
     it('POST /api/search/run should return error when service fails', async () => {

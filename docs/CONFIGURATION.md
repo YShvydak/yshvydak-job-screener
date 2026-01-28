@@ -15,6 +15,10 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 # Provider Keys (OPTIONAL)
 GLASSDOOR_KEY=your_glassdoor_key_internal_use_only
+
+# Authentication (REQUIRED for Multi-User)
+JWT_SECRET=your_super_secret_jwt_key_here
+ENABLE_AUTH=true
 ```
 
 **Get API Keys:**

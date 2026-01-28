@@ -25,22 +25,26 @@
 - Check Context7-MCP BEFORE installing/updating dependencies
 - Location: `packages/server/src/services/ai.service.ts` & `providers/`
 
-### 3. Job Deduplication - ALWAYS Check
+### 3. Job Deduplication & Data Isolation - ALWAYS Check
 
-**Strategy:** Prevent duplicate jobs using `provider_job_id` + `provider`
+**Strategy:** Prevent duplicate jobs per user + Isolate all data
 
-- ALWAYS check `jobRepository.findByProviderJobId()` before insert
-- Database UNIQUE constraint on `provider` + `provider_job_id`
-- Location: `packages/server/src/repositories/job.repository.ts`
+- **CRITICAL:** ALWAYS filter queries by `user_id`
+- ALWAYS check `jobRepository.findByProviderJobId(provider, id, userId)`
+- Database UNIQUE constraint on `user_id` + `provider` + `provider_job_id`
+- Location: `packages/server/src/repositories/`
 
-### 4. Search Profiles - Location is OPTIONAL, date_posted is REQUIRED
+### 4. Authentication - JWT & Middleware
 
-**Configuration:** Keywords (required), location (optional), date_posted (required), radius
+- **Protected Routes:** All API endpoints require `Authorization: Bearer <token>`
+- **Auth Flow:** `authFetch` (Frontend) → `AuthMiddleware` (Backend) → `req.user`
+- **Frontend State:** `authStore` manages session and token refresh
+- Location: `packages/server/src/middleware/auth.middleware.ts` & `docs/AUTHENTICATION.md`
 
-- **Empty location = Global search** (worldwide results)
-- **date_posted is mandatory** (today, 3days, week, month)
-- SerpAPI params: `q`, `hl='en'`, optional `location` + `lrad`, `chips: date_posted:...`
-- "No results" from SerpAPI is valid response (returns 0 jobs)
+### 5. Search Profiles - Location OPTIONAL, date_posted REQUIRED
+
+- **Empty location = Global search**
+- **date_posted mandatory**: today, 3days, week, month
 - Location: `packages/server/src/services/search.service.ts`
 
 ### 5. Manual Data Entry Support

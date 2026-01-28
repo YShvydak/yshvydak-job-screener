@@ -37,7 +37,7 @@ describe('AI API Integration', () => {
     })
 
     it('POST /api/ai/analyze/:jobId should return analysis', async () => {
-        seedSettings(server.db, fixtures.settings.cv_content)
+        seedSettings(server.db, 'test-user-id', fixtures.settings.cv_content)
 
         const analysis = {
             id: fixtures.analysis.id,
@@ -71,7 +71,7 @@ describe('AI API Integration', () => {
     })
 
     it('POST /api/ai/analyze-batch should return analyses', async () => {
-        seedSettings(server.db, fixtures.settings.cv_content)
+        seedSettings(server.db, 'test-user-id', fixtures.settings.cv_content)
 
         vi.spyOn(server.services.ai, 'analyzeJobs').mockResolvedValue([])
 

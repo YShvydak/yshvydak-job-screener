@@ -259,93 +259,59 @@ export class JobRepository {
 ### Schema
 
 ```sql
+-- Users Table
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Search Profiles (user-defined search criteria)
 CREATE TABLE search_profiles (
     id TEXT PRIMARY KEY,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    keywords TEXT NOT NULL,           -- Search query
-    location TEXT,                    -- OPTIONAL: empty = global search
-    date_posted TEXT,                 -- today, 3days, week, month
-    radius INTEGER,                   -- km (only used with location)
-    preferred_provider TEXT,          -- Optional: serpapi, glassdoor
-    active INTEGER DEFAULT 1,         -- boolean (0/1)
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ...
 );
 
 -- Jobs (fetched from SerpAPI)
 CREATE TABLE jobs (
-    id TEXT PRIMARY KEY,              -- UUID
-    profile_id TEXT REFERENCES search_profiles(id),
-    provider TEXT DEFAULT 'serpapi',  -- Job provider source
-    provider_job_id TEXT,             -- External job ID from provider
-    serpapi_job_id TEXT,              -- DEPRECATED: Kept for backward compatibility
-    title TEXT NOT NULL,
-    company TEXT,
-    location TEXT,
-    description TEXT,
-    apply_link TEXT,
-    posted_date TEXT,
-    source TEXT,                      -- LinkedIn, Indeed, etc.
-    status TEXT DEFAULT 'new',        -- new, applied, saved, rejected
-    fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(provider, provider_job_id) -- ⚠️ Prevent duplicates per provider
-);
-
--- AI Analysis Results
-CREATE TABLE ai_analyses (
     id TEXT PRIMARY KEY,
-    job_id TEXT REFERENCES jobs(id) ON DELETE CASCADE,
-    match_score INTEGER,              -- 0-100
-    recommendation TEXT,              -- APPLY, MAYBE, SKIP
-    strengths TEXT,                   -- JSON array
-    gaps TEXT,                        -- JSON array
-    reasoning TEXT,                   -- AI explanation
-    analyzed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(job_id)                    -- One analysis per job
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    profile_id TEXT REFERENCES search_profiles(id),
+    ...
+    UNIQUE(user_id, provider, provider_job_id) -- ⚠️ Prevent duplicates per user
 );
-
--- Settings (app configuration)
-CREATE TABLE settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Job Notes (optional MVP+)
-CREATE TABLE job_notes (
-    job_id TEXT PRIMARY KEY REFERENCES jobs(id) ON DELETE CASCADE,
-    content TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes for performance
-CREATE INDEX idx_jobs_status ON jobs(status);
-CREATE INDEX idx_jobs_profile_id ON jobs(profile_id);
-CREATE INDEX idx_jobs_fetched_at ON jobs(fetched_at);
-CREATE INDEX idx_ai_analyses_match_score ON ai_analyses(match_score);
+...
 ```
+
+### Authentication & Authorization
+
+The system implements a secure **JWT-based authentication** system:
+
+1. **Auth Service:** Handles registration, login, password hashing (bcrypt), and token generation.
+2. **Auth Middleware:** Intercepts requests, validates JWT tokens, and attaches `req.user`.
+3. **Data Isolation:** All repositories automatically filter data by `userId`.
 
 ### Key Database Decisions
 
-1. **Job Deduplication:** UNIQUE constraint on `provider` + `provider_job_id`
-    - Prevents duplicate jobs from same provider
-    - Allows same job from different providers (intentional)
-    - Database constraint as safety net
+1. **User Ownership:** All major entities (`jobs`, `search_profiles`, `settings`) belong to a user.
+2. **Job Deduplication:** UNIQUE constraint on `user_id` + `provider` + `provider_job_id`
+    - Prevents duplicates for the _same user_.
+    - Allows different users to have the same job (independent tracking).
 
-2. **One Analysis Per Job:** UNIQUE constraint on `job_id` in ai_analyses
+3. **One Analysis Per Job:** UNIQUE constraint on `job_id` in ai_analyses
     - Only one AI analysis per job
     - Can be updated if job is re-analyzed
 
-3. **Settings as Key-Value Store:**
+4. **Settings as Key-Value Store:**
     - Flexible configuration storage
     - CV content stored as text
     - Easy to extend
 
-4. **Status Tracking:**
+5. **Status Tracking:**
     - Simple enum: `new`, `applied`, `saved`, `rejected`
     - Updated via PATCH `/api/jobs/:id/status`
 

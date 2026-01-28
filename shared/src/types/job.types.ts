@@ -17,6 +17,7 @@ export type AIAnalysisMethod = 'api' | 'local'
  */
 export interface Job {
     id: string
+    user_id: string
     profile_id: string
     provider: JobProvider
     provider_job_id: string

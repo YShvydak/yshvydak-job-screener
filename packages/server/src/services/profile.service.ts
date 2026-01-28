@@ -9,34 +9,34 @@ export class ProfileService {
     constructor(private profileRepository: ProfileRepository) {}
 
     /**
-     * Get all profiles
+     * Get all profiles for a user
      */
-    getAll(): SearchProfile[] {
-        return this.profileRepository.findAll()
+    getAll(userId: string): SearchProfile[] {
+        return this.profileRepository.findAll(userId)
     }
 
     /**
-     * Get active profiles only
+     * Get active profiles only for a user
      */
-    getActive(): SearchProfile[] {
-        return this.profileRepository.findActive()
+    getActive(userId: string): SearchProfile[] {
+        return this.profileRepository.findActive(userId)
     }
 
     /**
      * Get profile by ID
      */
-    getById(id: string): SearchProfile | null {
-        return this.profileRepository.findById(id)
+    getById(id: string, userId: string): SearchProfile | null {
+        return this.profileRepository.findById(id, userId)
     }
 
     /**
      * Create a new profile
      */
-    create(input: SearchProfileInput): SearchProfile {
+    create(input: SearchProfileInput, userId: string): SearchProfile {
         this.validateInput(input)
 
-        const profile = this.profileRepository.create(input)
-        Logger.success('Profile created', {id: profile.id, name: profile.name})
+        const profile = this.profileRepository.create(input, userId)
+        Logger.success('Profile created', {id: profile.id, name: profile.name, userId})
 
         return profile
     }
@@ -44,8 +44,8 @@ export class ProfileService {
     /**
      * Update an existing profile
      */
-    update(id: string, input: Partial<SearchProfileInput>): SearchProfile {
-        const existing = this.profileRepository.findById(id)
+    update(id: string, input: Partial<SearchProfileInput>, userId: string): SearchProfile {
+        const existing = this.profileRepository.findById(id, userId)
         if (!existing) {
             throw new Error(`Profile not found: ${id}`)
         }

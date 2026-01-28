@@ -93,6 +93,44 @@ async saveJobs(results: Job[], profileId: string) {
 - Improves user experience (no duplicate listings)
 - Relies on database UNIQUE constraint as safety net
 
+- Relies on database UNIQUE constraint as safety net
+
+---
+
+### ❌ 3. Ignoring Multi-User Context (Data Leak)
+
+**Wrong:**
+
+```typescript
+// In job.repository.ts
+findByProviderJobId(provider: string, providerJobId: string) {
+    // WRONG - Global check across ALL users
+    return this.db.get(
+        "SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ?",
+        [provider, providerJobId]
+    );
+}
+```
+
+**Right:**
+
+```typescript
+// In job.repository.ts
+findByProviderJobId(provider: string, providerJobId: string, userId: string) {
+    // ALWAYS filter by userId for data isolation
+    return this.db.get(
+        "SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ? AND user_id = ?",
+        [provider, providerJobId, userId]
+    );
+}
+```
+
+**Why This Matters:**
+
+- **Critical Security Flaw:** Users see other users' data (if `user_id` missing in SELECT).
+- **False Duplicates:** User A cannot save a job if User B already saved it (if unique constraint is global).
+- **Broken Features:** My search results depend on someone else's actions.
+
 ---
 
 ### ❌ 3. Hardcoding API Keys

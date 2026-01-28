@@ -50,10 +50,12 @@ describe('AIService', () => {
     } as unknown as SettingsRepository
 
     let service: AIService
+    const userId = 'test-user-id'
 
     const job: Job = {
         id: 'job-1',
         profile_id: 'profile-1',
+        user_id: userId,
         provider: 'serpapi',
         provider_job_id: 'serp_1',
         serpapi_job_id: 'serp_1',
@@ -96,16 +98,16 @@ describe('AIService', () => {
             env.GEMINI_API_KEY = ''
             service = new AIService(analysisRepository, jobRepository, settingsRepository)
 
-            await expect(service.analyzeJob('job-1', fixtures.settings.cv_content)).rejects.toThrow(
-                'GEMINI_API_KEY is not configured'
-            )
+            await expect(
+                service.analyzeJob('job-1', userId, fixtures.settings.cv_content)
+            ).rejects.toThrow('GEMINI_API_KEY is not configured')
         })
 
         it('should throw when job is not found', async () => {
             jobRepository.findById = vi.fn().mockReturnValue(null)
 
             await expect(
-                service.analyzeJob('missing-job', fixtures.settings.cv_content)
+                service.analyzeJob('missing-job', userId, fixtures.settings.cv_content)
             ).rejects.toThrow('Job not found')
         })
 
@@ -113,7 +115,7 @@ describe('AIService', () => {
             jobRepository.findById = vi.fn().mockReturnValue(job)
             analysisRepository.findByJobId = vi.fn().mockReturnValue(existingAnalysis)
 
-            const result = await service.analyzeJob(job.id, fixtures.settings.cv_content)
+            const result = await service.analyzeJob(job.id, userId, fixtures.settings.cv_content)
 
             expect(result).toBe(existingAnalysis)
             expect(generateContent).not.toHaveBeenCalled()
@@ -130,7 +132,10 @@ describe('AIService', () => {
 
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            const result = await service.analyzeJob(job.id, fixtures.settings.cv_content)
+            const result = await service.analyzeJob(job.id, userId, fixtures.settings.cv_content)
+
+            // Should check settings for method preference
+            expect(settingsRepository.getAIAnalysisMethod).toHaveBeenCalledWith(userId)
 
             expect(analysisRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -153,7 +158,7 @@ describe('AIService', () => {
 
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            await service.analyzeJob(job.id, fixtures.settings.cv_content)
+            await service.analyzeJob(job.id, userId, fixtures.settings.cv_content)
 
             expect(analysisRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -187,7 +192,7 @@ describe('AIService', () => {
             analysisRepository.findByJobId = vi.fn().mockReturnValue(null)
 
             await expect(
-                service.analyzeJob(job.id, fixtures.settings.cv_content, 'local')
+                service.analyzeJob(job.id, userId, fixtures.settings.cv_content, 'local')
             ).rejects.toThrow('Gemini CLI is not installed')
         })
 
@@ -201,7 +206,12 @@ describe('AIService', () => {
 
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            const result = await service.analyzeJob(job.id, fixtures.settings.cv_content, 'local')
+            const result = await service.analyzeJob(
+                job.id,
+                userId,
+                fixtures.settings.cv_content,
+                'local'
+            )
 
             expect(analysisRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -223,7 +233,12 @@ describe('AIService', () => {
 
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            const result = await service.analyzeJob(job.id, fixtures.settings.cv_content, 'local')
+            const result = await service.analyzeJob(
+                job.id,
+                userId,
+                fixtures.settings.cv_content,
+                'local'
+            )
 
             expect(analysisRepository.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -241,7 +256,7 @@ describe('AIService', () => {
             execAsync.mockRejectedValueOnce({killed: true, message: 'timeout'})
 
             await expect(
-                service.analyzeJob(job.id, fixtures.settings.cv_content, 'local')
+                service.analyzeJob(job.id, userId, fixtures.settings.cv_content, 'local')
             ).rejects.toThrow('Gemini CLI timed out')
         })
     })
@@ -259,7 +274,7 @@ describe('AIService', () => {
             })
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            await service.analyzeJob(job.id, fixtures.settings.cv_content, 'api')
+            await service.analyzeJob(job.id, userId, fixtures.settings.cv_content, 'api')
 
             expect(generateContent).toHaveBeenCalled()
         })
@@ -276,9 +291,9 @@ describe('AIService', () => {
             })
             analysisRepository.create = vi.fn().mockReturnValue(existingAnalysis)
 
-            await service.analyzeJob(job.id, fixtures.settings.cv_content)
+            await service.analyzeJob(job.id, userId, fixtures.settings.cv_content)
 
-            expect(settingsRepository.getAIAnalysisMethod).toHaveBeenCalled()
+            expect(settingsRepository.getAIAnalysisMethod).toHaveBeenCalledWith(userId)
             expect(generateContent).toHaveBeenCalled()
         })
 
@@ -286,10 +301,15 @@ describe('AIService', () => {
             const spy = vi.spyOn(service, 'analyzeJob')
             spy.mockResolvedValue(existingAnalysis)
 
-            await service.analyzeJobs(['job-1', 'job-2'], fixtures.settings.cv_content, 'api')
+            await service.analyzeJobs(
+                ['job-1', 'job-2'],
+                userId,
+                fixtures.settings.cv_content,
+                'api'
+            )
 
-            expect(spy).toHaveBeenCalledWith('job-1', fixtures.settings.cv_content, 'api')
-            expect(spy).toHaveBeenCalledWith('job-2', fixtures.settings.cv_content, 'api')
+            expect(spy).toHaveBeenCalledWith('job-1', userId, fixtures.settings.cv_content, 'api')
+            expect(spy).toHaveBeenCalledWith('job-2', userId, fixtures.settings.cv_content, 'api')
         })
     })
 
@@ -332,6 +352,7 @@ describe('AIService', () => {
 
             const result = await service.analyzeJobs(
                 ['job-1', 'job-2'],
+                userId,
                 fixtures.settings.cv_content
             )
 

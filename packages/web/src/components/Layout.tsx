@@ -1,4 +1,5 @@
 import {NavLink, Outlet} from 'react-router-dom'
+import {logout, getCurrentUser} from '../utils/authFetch'
 
 const navLinks = [
     {to: '/', label: 'Dashboard'},
@@ -8,6 +9,8 @@ const navLinks = [
 ]
 
 export function Layout() {
+    const user = getCurrentUser()
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -33,6 +36,14 @@ export function Layout() {
                                 </NavLink>
                             ))}
                         </nav>
+                        <div className="flex items-center space-x-4">
+                            <span className="text-sm text-gray-600">{user?.email}</span>
+                            <button
+                                onClick={logout}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors">
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>

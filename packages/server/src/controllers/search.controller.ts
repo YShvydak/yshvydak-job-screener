@@ -16,6 +16,7 @@ export class SearchController {
      */
     run = async (req: Request, res: Response): Promise<void> => {
         try {
+            const userId = req.user!.id
             const {profileId, provider} = req.body
 
             if (!profileId) {
@@ -25,6 +26,7 @@ export class SearchController {
 
             const result = await this.searchService.executeSearch(
                 profileId,
+                userId,
                 provider as JobProvider | undefined
             )
             ResponseHelper.success(res, {result})
