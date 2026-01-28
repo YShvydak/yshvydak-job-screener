@@ -31,10 +31,12 @@ export class SearchService {
     /**
      * Execute a job search using a profile
      * @param profileId - Profile to use for search parameters
+     * @param userId - User ID who owns the jobs
      * @param providerOverride - Optional provider to use instead of profile preference
      */
     async executeSearch(
         profileId: string,
+        userId: string,
         providerOverride?: JobProvider
     ): Promise<ExtendedSearchResult> {
         // Get the search profile
@@ -67,7 +69,12 @@ export class SearchService {
         Logger.info(`Fetched ${result.jobs.length} jobs from ${provider.name}`)
 
         // Save jobs (preventing duplicates)
-        const {saved, duplicates} = await this.saveJobs(result.jobs, profileId, provider.name)
+        const {saved, duplicates} = await this.saveJobs(
+            result.jobs,
+            profileId,
+            provider.name,
+            userId
+        )
 
         Logger.success('Search completed', {
             profileId,
@@ -135,18 +142,24 @@ export class SearchService {
     /**
      * Save jobs to database (preventing duplicates)
      * Uses provider + provider_job_id for deduplication
+     * @param userId - User ID who owns the jobs
      */
     private async saveJobs(
         jobs: ProviderJobResult[],
         profileId: string,
-        provider: JobProvider
+        provider: JobProvider,
+        userId: string
     ): Promise<{saved: number; duplicates: number}> {
         let saved = 0
         let duplicates = 0
 
         for (const job of jobs) {
-            // Check for existing job by provider and job ID
-            const existing = this.jobRepository.findByProviderJobId(provider, job.provider_job_id)
+            // Check for existing job by provider and job ID (for this user only)
+            const existing = this.jobRepository.findByProviderJobId(
+                provider,
+                job.provider_job_id,
+                userId
+            )
 
             if (existing) {
                 duplicates++
@@ -172,7 +185,7 @@ export class SearchService {
                 source: job.source,
             }
 
-            this.jobRepository.create(jobInput)
+            this.jobRepository.create(jobInput, userId)
             saved++
         }
 

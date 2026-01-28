@@ -41,7 +41,7 @@ export function Settings() {
         fetchCV()
         fetchAIMethod()
         fetchAPIStatus()
-    }, [])
+    }, [fetchCV, fetchAIMethod])
 
     const fetchAPIStatus = async () => {
         setLoadingApiStatus(true)

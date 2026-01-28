@@ -4,12 +4,36 @@ Visual diagrams and detailed explanations of system flows and dependencies.
 
 ---
 
+## Authentication & Request Flow
+
+```
+HTTP Request (Client)
+  ↓
+Auth Middleware
+  ├─ Verify JWT Token (Authorization: Bearer <token>)
+  ├─ Decode User ID
+  └─ Attach `req.user`
+  ↓
+Controller
+  ├─ Extract `userId` from request
+  └─ Pass `userId` to Service layer
+  ↓
+Service
+  └─ Pass `userId` to Repository layer
+  ↓
+Repository
+  └─ Filter queries by `user_id = ?` (Data Isolation)
+```
+
+---
+
 ## Manual Job Search Flow
 
 ```
 User → /profiles → Click "Run Search" on profile
   ↓
 Frontend: POST /api/search/run
+  ├─ Header: Authorization: Bearer <token>
   ├─ Body: { profileId: "uuid" }
   ↓
 SearchController.runSearch()

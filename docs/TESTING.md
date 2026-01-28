@@ -18,7 +18,7 @@ npm run test:coverage    # Coverage report
 
 ## Test Structure
 
-```
+```text
 packages/server/src/__tests__/
 ├── helpers/
 │   ├── fixtures.ts      # Mock data (profiles, jobs, SerpAPI responses)
@@ -40,7 +40,9 @@ packages/server/src/__tests__/
     ├── profiles.integration.test.ts
     ├── settings.integration.test.ts
     ├── search.integration.test.ts
-    └── ai.integration.test.ts
+    ├── ai.integration.test.ts
+    ├── auth.integration.test.ts
+    └── isolation.integration.test.ts
 
 packages/web/src/__tests__/
 ├── setup.test.ts                     # environment check
@@ -138,9 +140,11 @@ seedAnalysis(db, overrides?)  // Insert analysis (requires job)
 ### testServer.ts
 
 ```typescript
-setupTestServer() // Returns { app, db, dbPath }
-teardownTestServer() // Closes DB, removes temp files
-cleanTestDatabase() // Clears all tables
+setupTestServer(options?) // Returns { app, db, dbPath, ... }
+// options: { useRealAuth: boolean } - Defaults to false (injects mock user)
+
+teardownTestServer(server) // Closes DB, removes temp files
+cleanTestDatabase(server)  // Clears all tables and re-seeds default user
 ```
 
 ---
@@ -169,4 +173,4 @@ cleanTestDatabase() // Clears all tables
 
 ---
 
-**Last Updated:** January 2026
+**Last Updated:** January 27, 2026 (Auth & Multi-user isolation added)

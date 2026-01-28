@@ -14,6 +14,7 @@ describe('AnalysisRepository', () => {
     let db: Database.Database
     let repository: AnalysisRepository
     let jobRepository: JobRepository
+    const userId = 'test-user-id'
 
     beforeEach(() => {
         db = new Database(':memory:')
@@ -22,14 +23,29 @@ describe('AnalysisRepository', () => {
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         db.exec(schema)
 
-        // Create a test profile for foreign key constraint
+        // Create a test user
         const now = new Date().toISOString()
         db.prepare(
+            `INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+        ).run(userId, 'test@example.com', 'hash', now, now)
+
+        // Create a test profile for foreign key constraint
+        db.prepare(
             `
-      INSERT INTO search_profiles (id, name, keywords, location, date_posted, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO search_profiles (id, user_id, name, keywords, location, date_posted, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
-        ).run('test-profile', 'Test Profile', 'test keywords', 'Test Location', 'week', 1, now, now)
+        ).run(
+            'test-profile',
+            userId,
+            'Test Profile',
+            'test keywords',
+            'Test Location',
+            'week',
+            1,
+            now,
+            now
+        )
 
         repository = new AnalysisRepository(db)
         jobRepository = new JobRepository(db)
@@ -40,13 +56,16 @@ describe('AnalysisRepository', () => {
     })
 
     function createJob(providerJobId: string, title: string) {
-        return jobRepository.create({
-            profile_id: 'test-profile',
-            provider: 'serpapi',
-            provider_job_id: providerJobId,
-            serpapi_job_id: providerJobId,
-            title,
-        })
+        return jobRepository.create(
+            {
+                profile_id: 'test-profile',
+                provider: 'serpapi',
+                provider_job_id: providerJobId,
+                serpapi_job_id: providerJobId,
+                title,
+            },
+            userId
+        )
     }
 
     describe('findByJobId', () => {

@@ -18,13 +18,19 @@ packages/server/src/
 │   └── Logger.ts                # Centralized logging
 │
 ├── controllers/                 # HTTP request handlers (thin layer)
+│   ├── auth.controller.ts       # POST /api/auth/register, /api/auth/login
 │   ├── job.controller.ts        # GET /api/jobs, PATCH /api/jobs/:id/status
 │   ├── profile.controller.ts    # CRUD /api/profiles
 │   ├── search.controller.ts     # POST /api/search/run
 │   ├── settings.controller.ts   # GET/PUT /api/settings, POST /api/settings/cv
 │   └── ai.controller.ts         # POST /api/ai/analyze
 │
+├── middleware/                  # Middleware
+│   ├── auth.middleware.ts       # JWT verification & protection
+│   └── ...
+│
 ├── services/                    # Business logic
+│   ├── auth.service.ts          # User registration, login, JWT generation
 │   ├── job.service.ts           # Job management, status updates
 │   ├── profile.service.ts       # Profile CRUD, validation
 │   ├── search.service.ts        # Orchestration of search providers

@@ -15,7 +15,7 @@
  *   })
  *
  *   beforeEach(async () => {
- *     cleanDatabase(server.db)
+ *     cleanTestDatabase(server)
  *   })
  */
 
@@ -24,6 +24,7 @@ import Database from 'better-sqlite3'
 import {v4 as uuid} from 'uuid'
 import path from 'path'
 import fs from 'fs'
+import {seedUser} from './database'
 
 // Repositories
 import {ProfileRepository} from '../../repositories/profile.repository'
@@ -54,6 +55,13 @@ import {createSearchRoutes} from '../../routes/search.routes'
 import {createAIRoutes} from '../../routes/ai.routes'
 import {createSettingsRoutes} from '../../routes/settings.routes'
 
+// ... imports
+import {UserRepository} from '../../repositories/user.repository'
+import {AuthService} from '../../services/auth.service'
+import {AuthController} from '../../controllers/auth.controller'
+import {createAuthRoutes} from '../../routes/auth.routes'
+import {createAuthMiddleware} from '../../middleware/auth.middleware'
+
 export interface TestServerInstance {
     app: Application
     db: Database.Database
@@ -61,6 +69,7 @@ export interface TestServerInstance {
     tempDir: string
     // Repositories for direct access in tests
     repositories: {
+        user: UserRepository
         profile: ProfileRepository
         job: JobRepository
         analysis: AnalysisRepository
@@ -68,6 +77,7 @@ export interface TestServerInstance {
     }
     // Services for mocking
     services: {
+        auth: AuthService
         profile: ProfileService
         job: JobService
         search: SearchService
@@ -75,10 +85,16 @@ export interface TestServerInstance {
     }
 }
 
+export interface TestServerOptions {
+    useRealAuth?: boolean
+}
+
 /**
  * Setup isolated test server with temporary database
  */
-export async function setupTestServer(): Promise<TestServerInstance> {
+export async function setupTestServer(
+    options: TestServerOptions = {}
+): Promise<TestServerInstance> {
     // Create unique temp directory for isolated database
     const testId = uuid().slice(0, 8)
     const tempDir = path.join(process.cwd(), `.test-${testId}`)
@@ -95,10 +111,14 @@ export async function setupTestServer(): Promise<TestServerInstance> {
     db.exec(schema)
 
     // Initialize Repositories
+    const userRepository = new UserRepository(db)
     const profileRepository = new ProfileRepository(db)
     const jobRepository = new JobRepository(db)
     const analysisRepository = new AnalysisRepository(db)
     const settingsRepository = new SettingsRepository(db)
+
+    // Seed test user (only if not using real auth, or we can seed it anyway for convenience)
+    seedUser(db)
 
     // Initialize Provider Registry (with empty keys for testing)
     const providerRegistry = new ProviderRegistry()
@@ -106,16 +126,18 @@ export async function setupTestServer(): Promise<TestServerInstance> {
     providerRegistry.register(new GlassdoorProvider({apiKey: ''}))
 
     // Initialize Services
+    const authService = new AuthService(userRepository, 'test-jwt-secret', '1h')
     const profileService = new ProfileService(profileRepository)
     const jobService = new JobService(jobRepository)
     const searchService = new SearchService(jobRepository, profileRepository, providerRegistry)
     const aiService = new AIService(analysisRepository, jobRepository, settingsRepository)
 
     // Initialize Controllers
+    const authController = new AuthController(authService)
     const profileController = new ProfileController(profileService)
     const jobController = new JobController(jobService)
     const searchController = new SearchController(searchService)
-    const aiController = new AIController(aiService, () => settingsRepository.getCV())
+    const aiController = new AIController(aiService, (userId) => settingsRepository.getCV(userId))
     const settingsController = new SettingsController(settingsRepository)
 
     // Create Express app
@@ -123,12 +145,32 @@ export async function setupTestServer(): Promise<TestServerInstance> {
     app.use(express.json())
     app.use(express.urlencoded({extended: true}))
 
+    // Auth Middleware
+    if (options.useRealAuth) {
+        app.use(createAuthMiddleware(authService))
+    } else {
+        // Mock Auth Middleware for Integration Tests (Default)
+        app.use((req, _res, next) => {
+            // Check if it's an auth route, if so, skip mock user injection to allow testing real auth endpoints if needed
+            // But usually, real auth endpoints are public. The mock middleware sets user for PROTECTED routes.
+            // If the router is mounted AFTER this middleware, this middleware runs first.
+            // Let's keep it simple: if useRealAuth is false, we inject user.
+            // We can exclude /api/auth paths to be safe, but they ignore req.user anyway.
+            ;(req as any).user = {
+                id: 'test-user-id',
+                email: 'test@example.com',
+            }
+            next()
+        })
+    }
+
     // Health check
     app.get('/health', (_req, res) => {
         res.json({status: 'ok', environment: 'test'})
     })
 
     // Mount routes
+    app.use('/api/auth', createAuthRoutes(authController))
     app.use('/api/profiles', createProfileRoutes(profileController))
     app.use('/api/jobs', createJobRoutes(jobController))
     app.use('/api/search', createSearchRoutes(searchController))
@@ -141,12 +183,14 @@ export async function setupTestServer(): Promise<TestServerInstance> {
         dbPath,
         tempDir,
         repositories: {
+            user: userRepository,
             profile: profileRepository,
             job: jobRepository,
             analysis: analysisRepository,
             settings: settingsRepository,
         },
         services: {
+            auth: authService,
             profile: profileService,
             job: jobService,
             search: searchService,
@@ -180,7 +224,9 @@ export function cleanTestDatabase(server: TestServerInstance): void {
     server.db.exec('DELETE FROM job_notes')
     server.db.exec('DELETE FROM jobs')
     server.db.exec('DELETE FROM search_profiles')
-    server.db.exec("UPDATE settings SET value = '' WHERE key = 'cv_content'")
+    server.db.exec('DELETE FROM user_settings')
+    server.db.exec('DELETE FROM users')
+    seedUser(server.db)
 }
 
 /**

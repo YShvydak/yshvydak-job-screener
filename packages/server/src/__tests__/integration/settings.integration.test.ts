@@ -29,6 +29,7 @@ describe('Settings API Integration', () => {
     })
 
     it('GET /api/settings should return settings map', async () => {
+        seedSettings(server.db, 'test-user-id', '')
         const response = await request(server.app).get('/api/settings').expect(200)
 
         expect(response.body.success).toBe(true)
@@ -61,7 +62,7 @@ describe('Settings API Integration', () => {
     })
 
     it('DELETE /api/settings/cv should clear CV', async () => {
-        seedSettings(server.db, fixtures.settings.cv_content)
+        seedSettings(server.db, 'test-user-id', fixtures.settings.cv_content)
 
         const response = await request(server.app).delete('/api/settings/cv').expect(200)
 

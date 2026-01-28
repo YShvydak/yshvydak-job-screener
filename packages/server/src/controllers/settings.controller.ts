@@ -14,9 +14,10 @@ export class SettingsController {
      * GET /api/settings
      * Get all settings
      */
-    getAll = (_req: Request, res: Response): void => {
+    getAll = (req: Request, res: Response): void => {
         try {
-            const settings = this.settingsRepository.getAll()
+            const userId = req.user!.id
+            const settings = this.settingsRepository.getAll(userId)
             ResponseHelper.success(res, {settings})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -27,9 +28,10 @@ export class SettingsController {
      * GET /api/settings/cv
      * Get CV content
      */
-    getCV = (_req: Request, res: Response): void => {
+    getCV = (req: Request, res: Response): void => {
         try {
-            const cv = this.settingsRepository.getCV()
+            const userId = req.user!.id
+            const cv = this.settingsRepository.getCV(userId)
             ResponseHelper.success(res, {
                 cv_content: cv,
                 has_cv: cv.length > 0,
@@ -45,6 +47,7 @@ export class SettingsController {
      */
     setCV = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {content} = req.body
 
             if (!content || typeof content !== 'string') {
@@ -52,8 +55,8 @@ export class SettingsController {
                 return
             }
 
-            this.settingsRepository.setCV(content)
-            Logger.success('CV updated', {length: content.length})
+            this.settingsRepository.setCV(userId, content)
+            Logger.success('CV updated', {userId, length: content.length})
 
             ResponseHelper.success(res, {
                 message: 'CV updated successfully',
@@ -68,10 +71,11 @@ export class SettingsController {
      * DELETE /api/settings/cv
      * Delete CV content
      */
-    deleteCV = (_req: Request, res: Response): void => {
+    deleteCV = (req: Request, res: Response): void => {
         try {
-            this.settingsRepository.setCV('')
-            Logger.info('CV deleted')
+            const userId = req.user!.id
+            this.settingsRepository.setCV(userId, '')
+            Logger.info('CV deleted', {userId})
             ResponseHelper.success(res, {message: 'CV deleted successfully'})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -82,9 +86,10 @@ export class SettingsController {
      * GET /api/settings/ai-method
      * Get AI analysis method
      */
-    getAIMethod = (_req: Request, res: Response): void => {
+    getAIMethod = (req: Request, res: Response): void => {
         try {
-            const method = this.settingsRepository.getAIAnalysisMethod()
+            const userId = req.user!.id
+            const method = this.settingsRepository.getAIAnalysisMethod(userId)
             ResponseHelper.success(res, {method})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -97,6 +102,7 @@ export class SettingsController {
      */
     setAIMethod = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {method} = req.body
 
             if (method !== 'api' && method !== 'local') {
@@ -104,8 +110,8 @@ export class SettingsController {
                 return
             }
 
-            this.settingsRepository.setAIAnalysisMethod(method)
-            Logger.success('AI analysis method updated', {method})
+            this.settingsRepository.setAIAnalysisMethod(userId, method)
+            Logger.success('AI analysis method updated', {userId, method})
 
             ResponseHelper.success(res, {
                 message: 'AI analysis method updated successfully',

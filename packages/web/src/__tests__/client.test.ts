@@ -8,6 +8,16 @@ import {get, post} from '../api/client'
 describe('api client', () => {
     beforeEach(() => {
         vi.restoreAllMocks()
+        localStorage.setItem(
+            '_auth',
+            JSON.stringify({
+                auth: {
+                    token: 'test-token',
+                    user: {id: '1', email: 'test@example.com'},
+                    expiresIn: '1h',
+                },
+            })
+        )
     })
 
     it('should return data on success', async () => {
@@ -46,7 +56,10 @@ describe('api client', () => {
             expect.stringContaining('/test'),
             expect.objectContaining({
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: expect.objectContaining({
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer test-token',
+                }),
                 body: JSON.stringify({name: 'Alice'}),
             })
         )

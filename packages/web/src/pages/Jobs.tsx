@@ -31,7 +31,7 @@ export function Jobs() {
     useEffect(() => {
         fetchJobs()
         fetchAIMethod()
-    }, [filters])
+    }, [filters, fetchJobs, fetchAIMethod])
 
     const handleStatusChange = async (jobId: string, status: JobStatus) => {
         try {

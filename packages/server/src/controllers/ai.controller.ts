@@ -9,7 +9,7 @@ import {ResponseHelper} from '../utils/ResponseHelper'
 export class AIController {
     constructor(
         private aiService: AIService,
-        private getCV: () => string // Function to get CV content from settings
+        private getCV: (userId: string) => string // Function to get CV content from settings
     ) {}
 
     /**
@@ -19,6 +19,7 @@ export class AIController {
      */
     analyzeJob = async (req: Request, res: Response): Promise<void> => {
         try {
+            const userId = req.user!.id
             const {jobId} = req.params
             const methodParam = req.query.method as string | undefined
 
@@ -32,7 +33,7 @@ export class AIController {
                 method = methodParam
             }
 
-            const cvContent = this.getCV()
+            const cvContent = this.getCV(userId)
 
             if (!cvContent) {
                 ResponseHelper.badRequest(
@@ -42,7 +43,7 @@ export class AIController {
                 return
             }
 
-            const analysis = await this.aiService.analyzeJob(jobId, cvContent, method)
+            const analysis = await this.aiService.analyzeJob(jobId, userId, cvContent, method)
             ResponseHelper.success(res, {analysis})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -56,6 +57,7 @@ export class AIController {
      */
     analyzeBatch = async (req: Request, res: Response): Promise<void> => {
         try {
+            const userId = req.user!.id
             const {jobIds} = req.body
             const methodParam = req.query.method as string | undefined
 
@@ -74,7 +76,7 @@ export class AIController {
                 return
             }
 
-            const cvContent = this.getCV()
+            const cvContent = this.getCV(userId)
 
             if (!cvContent) {
                 ResponseHelper.badRequest(
@@ -84,7 +86,7 @@ export class AIController {
                 return
             }
 
-            const analyses = await this.aiService.analyzeJobs(jobIds, cvContent, method)
+            const analyses = await this.aiService.analyzeJobs(jobIds, userId, cvContent, method)
             ResponseHelper.success(res, {
                 total: jobIds.length,
                 analyzed: analyses.length,

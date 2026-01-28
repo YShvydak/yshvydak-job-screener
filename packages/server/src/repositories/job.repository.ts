@@ -18,11 +18,12 @@ export class JobRepository {
 
     /**
      * Find all jobs with optional filters
+     * @param userId - Filter jobs by user ID (required for multi-user support)
      */
-    findAll(filters?: JobFilters): Job[] {
+    findAll(userId: string, filters?: JobFilters): Job[] {
         let sql = 'SELECT * FROM jobs'
-        const conditions: string[] = []
-        const params: (string | number)[] = []
+        const conditions: string[] = ['user_id = ?']
+        const params: (string | number)[] = [userId]
 
         if (filters?.status) {
             conditions.push('status = ?')
@@ -34,10 +35,7 @@ export class JobRepository {
             params.push(filters.profileId)
         }
 
-        if (conditions.length > 0) {
-            sql += ' WHERE ' + conditions.join(' AND ')
-        }
-
+        sql += ' WHERE ' + conditions.join(' AND ')
         sql += ' ORDER BY fetched_at DESC'
 
         const stmt = this.db.prepare(sql)
@@ -46,8 +44,9 @@ export class JobRepository {
 
     /**
      * Find jobs with AI analysis joined
+     * @param userId - Filter jobs by user ID (required for multi-user support)
      */
-    findAllWithAnalysis(filters?: JobFilters): JobWithAnalysis[] {
+    findAllWithAnalysis(userId: string, filters?: JobFilters): JobWithAnalysis[] {
         let sql = `
             SELECT
                 j.*,
@@ -61,8 +60,8 @@ export class JobRepository {
             FROM jobs j
             LEFT JOIN ai_analyses a ON j.id = a.job_id
         `
-        const conditions: string[] = []
-        const params: (string | number)[] = []
+        const conditions: string[] = ['j.user_id = ?']
+        const params: (string | number)[] = [userId]
 
         if (filters?.status) {
             conditions.push('j.status = ?')
@@ -101,49 +100,65 @@ export class JobRepository {
 
     /**
      * Find job by ID
+     * @param id - Job ID
+     * @param userId - User ID (optional, for security check)
      */
-    findById(id: string): Job | null {
-        const stmt = this.db.prepare('SELECT * FROM jobs WHERE id = ?')
-        return (stmt.get(id) as Job) || null
+    findById(id: string, userId?: string): Job | null {
+        let sql = 'SELECT * FROM jobs WHERE id = ?'
+        const params: string[] = [id]
+
+        if (userId) {
+            sql += ' AND user_id = ?'
+            params.push(userId)
+        }
+
+        const stmt = this.db.prepare(sql)
+        return (stmt.get(...params) as Job) || null
     }
 
     /**
-     * Find job by provider and provider job ID
+     * Find job by provider and provider job ID for a specific user
      * ⚠️ CRITICAL: Use this to check for duplicates before creating a job
+     * @param provider - Job provider (serpapi, glassdoor, etc.)
+     * @param providerJobId - External job ID from provider
+     * @param userId - User ID to check duplicates for
      */
-    findByProviderJobId(provider: JobProvider, providerJobId: string): Job | null {
+    findByProviderJobId(provider: JobProvider, providerJobId: string, userId: string): Job | null {
         const stmt = this.db.prepare(
-            'SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ?'
+            'SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ? AND user_id = ?'
         )
-        return (stmt.get(provider, providerJobId) as Job) || null
+        return (stmt.get(provider, providerJobId, userId) as Job) || null
     }
 
     /**
      * Find job by SerpAPI job ID
      * @deprecated Use findByProviderJobId() instead
      */
-    findBySerpAPIId(serpApiJobId: string): Job | null {
-        return this.findByProviderJobId('serpapi', serpApiJobId)
+    findBySerpAPIId(serpApiJobId: string, userId: string): Job | null {
+        return this.findByProviderJobId('serpapi', serpApiJobId, userId)
     }
 
     /**
      * Create a new job
      * ⚠️ IMPORTANT: Check findByProviderJobId() first to prevent duplicates!
+     * @param input - Job input data
+     * @param userId - User ID who owns this job
      */
-    create(input: JobInput): Job {
+    create(input: JobInput, userId: string): Job {
         const id = uuidv4()
         const now = new Date().toISOString()
 
         const stmt = this.db.prepare(`
             INSERT INTO jobs (
-                id, profile_id, provider, provider_job_id, serpapi_job_id,
+                id, user_id, profile_id, provider, provider_job_id, serpapi_job_id,
                 title, company, location, description, apply_link,
                 posted_date, source, status, fetched_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
         `)
 
         stmt.run(
             id,
+            userId,
             input.profile_id,
             input.provider,
             input.provider_job_id,
@@ -211,22 +226,24 @@ export class JobRepository {
     }
 
     /**
-     * Delete all jobs
+     * Delete all jobs for a user
+     * @param userId - User ID
      */
-    deleteAll(): number {
-        const stmt = this.db.prepare('DELETE FROM jobs')
-        const result = stmt.run()
+    deleteAll(userId: string): number {
+        const stmt = this.db.prepare('DELETE FROM jobs WHERE user_id = ?')
+        const result = stmt.run(userId)
         return result.changes
     }
 
     /**
-     * Count jobs by status
+     * Count jobs by status for a user
+     * @param userId - User ID
      */
-    countByStatus(): Record<JobStatus | 'total', number> {
+    countByStatus(userId: string): Record<JobStatus | 'total', number> {
         const stmt = this.db.prepare(`
-            SELECT status, COUNT(*) as count FROM jobs GROUP BY status
+            SELECT status, COUNT(*) as count FROM jobs WHERE user_id = ? GROUP BY status
         `)
-        const rows = stmt.all() as {status: JobStatus; count: number}[]
+        const rows = stmt.all(userId) as {status: JobStatus; count: number}[]
 
         const result: Record<JobStatus | 'total', number> = {
             new: 0,
@@ -250,6 +267,7 @@ export class JobRepository {
     private mapRowToJobWithAnalysis(row: any): JobWithAnalysis {
         const job: JobWithAnalysis = {
             id: row.id,
+            user_id: row.user_id,
             profile_id: row.profile_id,
             provider: row.provider || 'serpapi', // default for old data
             provider_job_id: row.provider_job_id || row.serpapi_job_id,

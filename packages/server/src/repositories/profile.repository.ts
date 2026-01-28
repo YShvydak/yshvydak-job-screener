@@ -9,51 +9,67 @@ export class ProfileRepository {
     constructor(private db: Database) {}
 
     /**
-     * Find all profiles
+     * Find all profiles for a user
+     * @param userId - User ID
      */
-    findAll(): SearchProfile[] {
+    findAll(userId: string): SearchProfile[] {
         const stmt = this.db.prepare(`
             SELECT * FROM search_profiles
+            WHERE user_id = ?
             ORDER BY created_at DESC
         `)
-        return stmt.all() as SearchProfile[]
+        return stmt.all(userId) as SearchProfile[]
     }
 
     /**
-     * Find active profiles only
+     * Find active profiles only for a user
+     * @param userId - User ID
      */
-    findActive(): SearchProfile[] {
+    findActive(userId: string): SearchProfile[] {
         const stmt = this.db.prepare(`
             SELECT * FROM search_profiles
-            WHERE active = 1
+            WHERE user_id = ? AND active = 1
             ORDER BY created_at DESC
         `)
-        return stmt.all() as SearchProfile[]
+        return stmt.all(userId) as SearchProfile[]
     }
 
     /**
      * Find profile by ID
+     * @param id - Profile ID
+     * @param userId - User ID (optional, for security check)
      */
-    findById(id: string): SearchProfile | null {
-        const stmt = this.db.prepare('SELECT * FROM search_profiles WHERE id = ?')
-        return (stmt.get(id) as SearchProfile) || null
+    findById(id: string, userId?: string): SearchProfile | null {
+        let sql = 'SELECT * FROM search_profiles WHERE id = ?'
+        const params: string[] = [id]
+
+        if (userId) {
+            sql += ' AND user_id = ?'
+            params.push(userId)
+        }
+
+        const stmt = this.db.prepare(sql)
+        return (stmt.get(...params) as SearchProfile) || null
     }
 
     /**
      * Create a new profile
+     * @param input - Profile input data
+     * @param userId - User ID who owns this profile
      */
-    create(input: SearchProfileInput): SearchProfile {
+    create(input: SearchProfileInput, userId: string): SearchProfile {
         const id = uuidv4()
         const now = new Date().toISOString()
 
         const stmt = this.db.prepare(`
             INSERT INTO search_profiles (
-                id, name, keywords, location, date_posted, radius, preferred_provider, active, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                id, user_id, name, keywords, location, date_posted, radius, preferred_provider, active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         `)
 
         stmt.run(
             id,
+            userId,
             input.name,
             input.keywords,
             input.location,

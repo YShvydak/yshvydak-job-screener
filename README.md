@@ -10,6 +10,7 @@ AI-powered job search automation that finds, analyzes, and scores job postings t
 
 ## 🌟 Features
 
+- 🔐 **Multi-User Authentication** - Secure login, registration, and per-user data isolation
 - 🔍 **Automated Job Search** - Integrates with SerpAPI, Glassdoor, and more
 - 🔌 **Multi-Provider Support** - Unify jobs from different sources
 - 🤖 **AI-Powered Matching** - Google Gemini AI analyzes job fit based on your CV
@@ -17,6 +18,19 @@ AI-powered job search automation that finds, analyzes, and scores job postings t
 - 📋 **Search Profiles** - Save and reuse search criteria (keywords, location, etc.)
 - 📝 **Application Tracking** - Track job status (new, applied, saved, rejected)
 - 💾 **Self-Hosted** - Runs on your Raspberry Pi 5 (or any server)
+
+---
+
+## 🔐 Authentication & Multi-User Support
+
+This project supports full multi-user authentication with data isolation.
+
+- **Secure Registration & Login** (Email/Password with Bcrypt)
+- **JWT-based Session Management**
+- **Per-User Data Isolation** (Jobs, Profiles, CVs are private)
+- **Protected Routes** & API Endpoints
+
+See [docs/AUTH_README.md](docs/AUTH_README.md) for full details.
 
 ---
 

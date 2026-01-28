@@ -14,19 +14,37 @@ import {fixtures} from './fixtures'
 // ============================================
 
 /**
+ * Seed a user into the database
+ */
+export function seedUser(db: Database, userId = 'test-user-id', email = 'test@example.com') {
+    const now = new Date().toISOString()
+    const stmt = db.prepare(`
+    INSERT OR IGNORE INTO users (id, email, password_hash, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+  `)
+    stmt.run(userId, email, 'hash', now, now)
+    return {id: userId, email}
+}
+
+/**
  * Seed a search profile into the database
  */
 export function seedProfile(
     db: Database,
-    data: Partial<typeof fixtures.profile> = fixtures.profile
+    data: Partial<typeof fixtures.profile> & {user_id?: string} = {}
 ) {
-    const profile = {...fixtures.profile, ...data}
+    const userId = data.user_id || 'test-user-id'
+    // Ensure user exists
+    seedUser(db, userId)
+
+    const profile = {...fixtures.profile, user_id: userId, ...data}
     const stmt = db.prepare(`
-    INSERT INTO search_profiles (id, name, keywords, location, date_posted, radius, active)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO search_profiles (id, user_id, name, keywords, location, date_posted, radius, active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
     stmt.run(
         profile.id,
+        userId,
         profile.name,
         profile.keywords,
         profile.location,
@@ -40,20 +58,29 @@ export function seedProfile(
 /**
  * Seed a job into the database
  */
-export function seedJob(db: Database, data: Partial<typeof fixtures.job> = fixtures.job) {
-    const job = {...fixtures.job, ...data}
+export function seedJob(
+    db: Database,
+    data: Partial<typeof fixtures.job> & {user_id?: string} = {}
+) {
+    const userId = data.user_id || 'test-user-id'
+    // Ensure user exists
+    seedUser(db, userId)
+
+    const job = {...fixtures.job, user_id: userId, ...data}
     const now = new Date().toISOString()
     const stmt = db.prepare(`
     INSERT INTO jobs (
-      id, profile_id, serpapi_job_id, title, company, location,
+      id, user_id, profile_id, provider, provider_job_id, title, company, location,
       description, apply_link, posted_date, source, status,
       fetched_at, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
     stmt.run(
         job.id,
+        userId,
         job.profile_id,
-        job.serpapi_job_id,
+        job.provider,
+        job.provider_job_id,
         job.title,
         job.company,
         job.location,
@@ -99,12 +126,19 @@ export function seedAnalysis(
 /**
  * Seed settings into the database
  */
-export function seedSettings(db: Database, cvContent: string = fixtures.settings.cv_content) {
+export function seedSettings(
+    db: Database,
+    userId = 'test-user-id',
+    cvContent: string = fixtures.settings.cv_content
+) {
+    // Ensure user exists
+    seedUser(db, userId)
+
     const stmt = db.prepare(`
-    INSERT OR REPLACE INTO settings (key, value, updated_at)
-    VALUES ('cv_content', ?, ?)
+    INSERT OR REPLACE INTO user_settings (user_id, key, value, updated_at)
+    VALUES (?, 'cv_content', ?, ?)
   `)
-    stmt.run(cvContent, new Date().toISOString())
+    stmt.run(userId, cvContent, new Date().toISOString())
 }
 
 // ============================================
@@ -129,7 +163,10 @@ export function getJobById(db: Database, id: string) {
  * Get job by SerpAPI ID
  */
 export function getJobBySerpApiId(db: Database, serpApiId: string) {
-    return db.prepare('SELECT * FROM jobs WHERE serpapi_job_id = ?').get(serpApiId)
+    // Note: This relies on internal implementation details if we mapped serpapi to provider_job_id
+    return db
+        .prepare('SELECT * FROM jobs WHERE provider = ? AND provider_job_id = ?')
+        .get('serpapi', serpApiId)
 }
 
 /**
@@ -161,12 +198,12 @@ export function getAnalysisByJobId(db: Database, jobId: string) {
 }
 
 /**
- * Get CV content from settings
+ * Get CV content from user_settings
  */
-export function getCVContent(db: Database): string | null {
-    const result = db.prepare("SELECT value FROM settings WHERE key = 'cv_content'").get() as
-        | {value: string}
-        | undefined
+export function getCVContent(db: Database, userId = 'test-user-id'): string | null {
+    const result = db
+        .prepare("SELECT value FROM user_settings WHERE user_id = ? AND key = 'cv_content'")
+        .get(userId) as {value: string} | undefined
     return result?.value ?? null
 }
 
@@ -215,8 +252,8 @@ export function cleanDatabase(db: Database) {
     db.exec('DELETE FROM job_notes')
     db.exec('DELETE FROM jobs')
     db.exec('DELETE FROM search_profiles')
-    db.exec("DELETE FROM settings WHERE key != 'cv_content'")
-    db.exec("UPDATE settings SET value = '' WHERE key = 'cv_content'")
+    db.exec('DELETE FROM user_settings')
+    db.exec('DELETE FROM users')
 }
 
 /**

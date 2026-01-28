@@ -10,9 +10,36 @@ REST API documentation for YShvydak Job Screener.
 
 ## Authentication
 
-**Current:** No authentication (self-hosted personal app)
+All API endpoints (except listed below) are **protected** and require a valid JWT token.
 
-**Future:** Basic auth or JWT (if needed)
+**Header:** `Authorization: Bearer <token>`
+
+### Auth Endpoints (Public)
+
+#### Register User
+
+```http
+POST /api/auth/register
+```
+
+**Body:** `{ "email": "user@example.com", "password": "securePass123" }`
+
+#### Login
+
+```http
+POST /api/auth/login
+```
+
+**Body:** `{ "email": "user@example.com", "password": "securePass123" }`
+**Response:** `{ "token": "jwt_token_string", "user": { "id": "...", "email": "..." } }`
+
+#### Get Current User (Protected)
+
+```http
+GET /api/auth/me
+```
+
+**Header:** `Authorization: Bearer <token>`
 
 ---
 

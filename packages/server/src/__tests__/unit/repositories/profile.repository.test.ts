@@ -13,6 +13,7 @@ import type {DatePosted} from '@yshvydak-job-screener/shared'
 describe('ProfileRepository', () => {
     let db: Database.Database
     let repository: ProfileRepository
+    const userId = 'test-user-id'
 
     beforeEach(() => {
         db = new Database(':memory:')
@@ -20,6 +21,12 @@ describe('ProfileRepository', () => {
         const schemaPath = path.join(__dirname, '../../../database/schema.sql')
         const schema = fs.readFileSync(schemaPath, 'utf-8')
         db.exec(schema)
+
+        // Create a test user
+        const now = new Date().toISOString()
+        db.prepare(
+            `INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+        ).run(userId, 'test@example.com', 'hash', now, now)
 
         repository = new ProfileRepository(db)
     })
@@ -29,47 +36,94 @@ describe('ProfileRepository', () => {
     })
 
     describe('findAll', () => {
-        it('should return all profiles', () => {
-            repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
-            repository.create({
-                name: fixtures.profileInactive.name,
-                keywords: fixtures.profileInactive.keywords,
-                location: fixtures.profileInactive.location,
-                date_posted: fixtures.profileInactive.date_posted as DatePosted,
-            })
+        it('should return all profiles for user', () => {
+            repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
+            repository.create(
+                {
+                    name: fixtures.profileInactive.name,
+                    keywords: fixtures.profileInactive.keywords,
+                    location: fixtures.profileInactive.location,
+                    date_posted: fixtures.profileInactive.date_posted as DatePosted,
+                },
+                userId
+            )
 
-            const result = repository.findAll()
+            const result = repository.findAll(userId)
 
             expect(result).toHaveLength(2)
             expect(result.map((p) => p.name)).toEqual(
                 expect.arrayContaining([fixtures.profile.name, fixtures.profileInactive.name])
             )
         })
+
+        it('should NOT return profiles for other users', () => {
+            // Create profile for current user
+            repository.create(
+                {
+                    name: 'My Profile',
+                    keywords: 'k',
+                    location: 'l',
+                    date_posted: 'month',
+                },
+                userId
+            )
+
+            // Create other user and profile
+            const otherUserId = 'other-user'
+            db.prepare(`INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)`).run(
+                otherUserId,
+                'other@example.com',
+                'hash'
+            )
+
+            repository.create(
+                {
+                    name: 'Other Profile',
+                    keywords: 'k',
+                    location: 'l',
+                    date_posted: 'month',
+                },
+                otherUserId
+            )
+
+            const result = repository.findAll(userId)
+            expect(result).toHaveLength(1)
+            expect(result[0].name).toBe('My Profile')
+        })
     })
 
     describe('findActive', () => {
-        it('should return only active profiles', () => {
-            const active = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+        it('should return only active profiles for user', () => {
+            const active = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
-            const inactive = repository.create({
-                name: fixtures.profileInactive.name,
-                keywords: fixtures.profileInactive.keywords,
-                location: fixtures.profileInactive.location,
-                date_posted: fixtures.profileInactive.date_posted as DatePosted,
-            })
+            const inactive = repository.create(
+                {
+                    name: fixtures.profileInactive.name,
+                    keywords: fixtures.profileInactive.keywords,
+                    location: fixtures.profileInactive.location,
+                    date_posted: fixtures.profileInactive.date_posted as DatePosted,
+                },
+                userId
+            )
             repository.toggleActive(inactive.id)
 
-            const result = repository.findActive()
+            const result = repository.findActive(userId)
 
             expect(result).toHaveLength(1)
             expect(result[0].id).toBe(active.id)
@@ -79,12 +133,15 @@ describe('ProfileRepository', () => {
 
     describe('findById', () => {
         it('should return profile when id exists', () => {
-            const created = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const created = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             const result = repository.findById(created.id)
 
@@ -100,14 +157,18 @@ describe('ProfileRepository', () => {
 
     describe('create', () => {
         it('should create a new profile with required fields', () => {
-            const result = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const result = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             expect(result.id).toBeDefined()
+            expect(result.user_id).toBe(userId)
             expect(result.name).toBe(fixtures.profile.name)
             expect(result.active).toBe(1)
             expect(result.date_posted).toBe(fixtures.profile.date_posted)
@@ -115,13 +176,16 @@ describe('ProfileRepository', () => {
         })
 
         it('should persist optional fields when provided', () => {
-            const result = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-                radius: fixtures.profile.radius,
-            })
+            const result = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                    radius: fixtures.profile.radius,
+                },
+                userId
+            )
 
             expect(result.date_posted).toBe(fixtures.profile.date_posted)
             expect(result.radius).toBe(fixtures.profile.radius)
@@ -130,12 +194,15 @@ describe('ProfileRepository', () => {
 
     describe('update', () => {
         it('should update profile fields', () => {
-            const created = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const created = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             const updated = repository.update(created.id, {
                 name: 'Updated Name',
@@ -148,12 +215,15 @@ describe('ProfileRepository', () => {
         })
 
         it('should update updated_at timestamp', () => {
-            const created = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const created = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             const originalUpdatedAt = created.updated_at
 
@@ -175,12 +245,15 @@ describe('ProfileRepository', () => {
 
     describe('toggleActive', () => {
         it('should toggle active status', () => {
-            const created = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const created = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             const toggled = repository.toggleActive(created.id)
 
@@ -198,12 +271,15 @@ describe('ProfileRepository', () => {
 
     describe('delete', () => {
         it('should delete existing profile', () => {
-            const created = repository.create({
-                name: fixtures.profile.name,
-                keywords: fixtures.profile.keywords,
-                location: fixtures.profile.location,
-                date_posted: fixtures.profile.date_posted as DatePosted,
-            })
+            const created = repository.create(
+                {
+                    name: fixtures.profile.name,
+                    keywords: fixtures.profile.keywords,
+                    location: fixtures.profile.location,
+                    date_posted: fixtures.profile.date_posted as DatePosted,
+                },
+                userId
+            )
 
             const result = repository.delete(created.id)
 

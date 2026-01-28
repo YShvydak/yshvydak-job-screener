@@ -35,7 +35,7 @@ export function Profiles() {
     useEffect(() => {
         fetchProfiles()
         fetchProviders()
-    }, [])
+    }, [fetchProfiles, fetchProviders])
 
     const handleRunSearch = async (profileId: string, provider?: JobProvider) => {
         setSearchingId(profileId)

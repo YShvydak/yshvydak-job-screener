@@ -84,12 +84,14 @@ describe('Jobs API Integration', () => {
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-1',
+                provider_job_id: 'serp_1',
                 serpapi_job_id: 'serp_1',
                 status: 'new',
             })
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-2',
+                provider_job_id: 'serp_2',
                 serpapi_job_id: 'serp_2',
                 status: 'applied',
             })
@@ -110,12 +112,14 @@ describe('Jobs API Integration', () => {
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-a',
+                provider_job_id: 'serp_a',
                 serpapi_job_id: 'serp_a',
                 profile_id: 'profile-a',
             })
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-b',
+                provider_job_id: 'serp_b',
                 serpapi_job_id: 'serp_b',
                 profile_id: 'profile-b',
             })
@@ -180,13 +184,11 @@ describe('Jobs API Integration', () => {
             expect(response.body.data.job.status).toBe('applied')
         })
 
-        it('should return 500 when job not found (error thrown by service)', async () => {
-            // Note: Current implementation throws error which becomes 500
-            // Ideally this should be 404, but testing actual behavior
+        it('should return 404 when job not found (auto-detected by ResponseHelper)', async () => {
             const response = await request(server.app)
                 .patch('/api/jobs/non-existent-id/status')
                 .send({status: 'applied'})
-                .expect(500)
+                .expect(404)
 
             expect(response.body.success).toBe(false)
             expect(response.body.error).toContain('not found')
@@ -249,11 +251,10 @@ describe('Jobs API Integration', () => {
             expect(getResponse.status).toBe(404)
         })
 
-        it('should return 500 when job not found (error thrown by service)', async () => {
-            // Note: Current implementation throws error which becomes 500
+        it('should return 404 when job not found (auto-detected by ResponseHelper)', async () => {
             const response = await request(server.app)
                 .delete('/api/jobs/non-existent-id')
-                .expect(500)
+                .expect(404)
 
             expect(response.body.success).toBe(false)
             expect(response.body.error).toContain('not found')
@@ -289,8 +290,18 @@ describe('Jobs API Integration', () => {
         it('should delete all jobs and analyses', async () => {
             // Arrange
             seedProfile(server.db)
-            seedJob(server.db, {...fixtures.job, id: 'job-1', serpapi_job_id: 'serp_1'})
-            seedJob(server.db, {...fixtures.job, id: 'job-2', serpapi_job_id: 'serp_2'})
+            seedJob(server.db, {
+                ...fixtures.job,
+                id: 'job-1',
+                provider_job_id: 'serp_1',
+                serpapi_job_id: 'serp_1',
+            })
+            seedJob(server.db, {
+                ...fixtures.job,
+                id: 'job-2',
+                provider_job_id: 'serp_2',
+                serpapi_job_id: 'serp_2',
+            })
             seedAnalysis(server.db, {...fixtures.analysis, job_id: 'job-1'})
             seedAnalysis(server.db, {
                 ...fixtures.analysisLowScore,
@@ -332,18 +343,21 @@ describe('Jobs API Integration', () => {
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-1',
+                provider_job_id: 'serp_1',
                 serpapi_job_id: 'serp_1',
                 status: 'new',
             })
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-2',
+                provider_job_id: 'serp_2',
                 serpapi_job_id: 'serp_2',
                 status: 'new',
             })
             seedJob(server.db, {
                 ...fixtures.job,
                 id: 'job-3',
+                provider_job_id: 'serp_3',
                 serpapi_job_id: 'serp_3',
                 status: 'applied',
             })

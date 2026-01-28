@@ -61,23 +61,33 @@ export class AIService {
 
     /**
      * Get the effective analysis method based on parameter or setting
+     * @param userId - User ID for fetching user-specific settings
+     * @param requestedMethod - Optional method override
      */
-    private getEffectiveMethod(requestedMethod?: AIAnalysisMethod): AIAnalysisMethod {
+    private getEffectiveMethod(
+        userId: string,
+        requestedMethod?: AIAnalysisMethod
+    ): AIAnalysisMethod {
         if (requestedMethod) {
             return requestedMethod
         }
-        return this.settingsRepository.getAIAnalysisMethod()
+        return this.settingsRepository.getAIAnalysisMethod(userId)
     }
 
     /**
      * Analyze a single job against the user's CV
+     * @param jobId - Job ID to analyze
+     * @param userId - User ID (for fetching user-specific settings)
+     * @param cvContent - User's CV content
+     * @param method - Optional AI method override
      */
     async analyzeJob(
         jobId: string,
+        userId: string,
         cvContent: string,
         method?: AIAnalysisMethod
     ): Promise<AIAnalysis> {
-        const effectiveMethod = this.getEffectiveMethod(method)
+        const effectiveMethod = this.getEffectiveMethod(userId, method)
 
         // Validate that the requested method is available
         if (effectiveMethod === 'api' && !this.ai) {
@@ -139,9 +149,14 @@ export class AIService {
 
     /**
      * Analyze multiple jobs
+     * @param jobIds - Array of job IDs
+     * @param userId - User ID (for fetching user-specific settings)
+     * @param cvContent - User's CV content
+     * @param method - Optional AI method override
      */
     async analyzeJobs(
         jobIds: string[],
+        userId: string,
         cvContent: string,
         method?: AIAnalysisMethod
     ): Promise<AIAnalysis[]> {
@@ -149,7 +164,7 @@ export class AIService {
 
         for (const jobId of jobIds) {
             try {
-                const analysis = await this.analyzeJob(jobId, cvContent, method)
+                const analysis = await this.analyzeJob(jobId, userId, cvContent, method)
                 results.push(analysis)
             } catch (error) {
                 Logger.error(`Failed to analyze job ${jobId}`, error)

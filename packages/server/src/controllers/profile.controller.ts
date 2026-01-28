@@ -13,9 +13,10 @@ export class ProfileController {
      * GET /api/profiles
      * Get all profiles
      */
-    getAll = (_req: Request, res: Response): void => {
+    getAll = (req: Request, res: Response): void => {
         try {
-            const profiles = this.profileService.getAll()
+            const userId = req.user!.id
+            const profiles = this.profileService.getAll(userId)
             ResponseHelper.success(res, {profiles})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -26,9 +27,10 @@ export class ProfileController {
      * GET /api/profiles/active
      * Get active profiles only
      */
-    getActive = (_req: Request, res: Response): void => {
+    getActive = (req: Request, res: Response): void => {
         try {
-            const profiles = this.profileService.getActive()
+            const userId = req.user!.id
+            const profiles = this.profileService.getActive(userId)
             ResponseHelper.success(res, {profiles})
         } catch (error) {
             ResponseHelper.error(res, error)
@@ -41,8 +43,9 @@ export class ProfileController {
      */
     getById = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
-            const profile = this.profileService.getById(id)
+            const profile = this.profileService.getById(id, userId)
 
             if (!profile) {
                 ResponseHelper.notFound(res, 'Profile not found')
@@ -61,8 +64,9 @@ export class ProfileController {
      */
     create = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const input: SearchProfileInput = req.body
-            const profile = this.profileService.create(input)
+            const profile = this.profileService.create(input, userId)
             ResponseHelper.created(res, {profile})
         } catch (error) {
             // Validation errors should return 400
@@ -85,9 +89,10 @@ export class ProfileController {
      */
     update = (req: Request, res: Response): void => {
         try {
+            const userId = req.user!.id
             const {id} = req.params
             const input: Partial<SearchProfileInput> = req.body
-            const profile = this.profileService.update(id, input)
+            const profile = this.profileService.update(id, input, userId)
             ResponseHelper.success(res, {profile})
         } catch (error) {
             // Validation errors should return 400

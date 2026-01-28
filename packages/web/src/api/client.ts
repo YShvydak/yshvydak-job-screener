@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'
+import {authFetch} from '../utils/authFetch'
 
 /**
  * Generic API response handler
@@ -17,7 +17,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
  * Generic GET request
  */
 export async function get<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${API_BASE}${endpoint}`)
+    const response = await authFetch(endpoint, {method: 'GET'})
     return handleResponse<T>(response)
 }
 
@@ -25,9 +25,8 @@ export async function get<T>(endpoint: string): Promise<T> {
  * Generic POST request
  */
 export async function post<T, B = unknown>(endpoint: string, body: B): Promise<T> {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await authFetch(endpoint, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body),
     })
     return handleResponse<T>(response)
@@ -37,9 +36,8 @@ export async function post<T, B = unknown>(endpoint: string, body: B): Promise<T
  * Generic PUT request
  */
 export async function put<T, B = unknown>(endpoint: string, body: B): Promise<T> {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await authFetch(endpoint, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(body),
     })
     return handleResponse<T>(response)
@@ -49,9 +47,8 @@ export async function put<T, B = unknown>(endpoint: string, body: B): Promise<T>
  * Generic PATCH request
  */
 export async function patch<T, B = unknown>(endpoint: string, body?: B): Promise<T> {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await authFetch(endpoint, {
         method: 'PATCH',
-        headers: {'Content-Type': 'application/json'},
         ...(body && {body: JSON.stringify(body)}),
     })
     return handleResponse<T>(response)
@@ -61,7 +58,7 @@ export async function patch<T, B = unknown>(endpoint: string, body?: B): Promise
  * Generic DELETE request
  */
 export async function del<T>(endpoint: string): Promise<T> {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await authFetch(endpoint, {
         method: 'DELETE',
     })
     return handleResponse<T>(response)
